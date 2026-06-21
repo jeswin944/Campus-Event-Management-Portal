@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Certificates{% endblock %}
+{% block body_class %}admin-page-bg{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-12 d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="text-primary mb-1"><i class="fas fa-certificate me-2"></i>Certificate Management</h2>
+                <p class="text-muted mb-0 small">Review, approve and track event participation certificates.</p>
+            </div>
+            <div>
+                <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-back-theme px-4">
+                    <i class="fas fa-arrow-left me-2"></i>Back
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabbed Navigation Buttons -->
+    <div class="d-flex gap-2 mb-4">
+        <button class="btn btn-primary px-4 rounded-pill transition-standard active" id="btn-pending" onclick="showTab('pending')">
+            <i class="fas fa-clock me-2"></i>Pending Requests
+            <span class="badge bg-white text-primary ms-2">{{ pending_certs|length }}</span>
+        </button>
+        <button class="btn btn-outline-primary px-4 rounded-pill transition-standard" id="btn-history" onclick="showTab('history')">
+            <i class="fas fa-history me-2"></i>Certificate History
+        </button>
+    </div>
+
+    <!-- Tab Contents Container -->
+    <div class="card glass-panel border-0 p-4 mb-5 shadow-lg">
+        
+        <!-- Pending Tab -->
+        <div id="tab-pending" class="tab-pane active animated fadeIn">
+            <h4 class="mb-4 text-white fs-5 opacity-75 fw-bold">Pending Approvals</h4>
+            {% if pending_certs %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Event Name</th>
+                            <th>Event Date</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cert in pending_certs %}
+                        <tr>
+                            <td class="fw-bold">{{ cert.student_name }}</td>
+                            <td>{{ cert.event_name }}</td>
+                            <td>{{ cert.event_date }}</td>
+                            <td><span class="badge bg-warning text-dark px-3 py-2"><i class="fas fa-hourglass-half me-1"></i>{{ cert.certificate_status }}</span></td>
+                            <td>
+                                <a href="{{ url_for('admin.approve_certificate', reg_id=cert.registration_id) }}"
+                                    class="btn btn-success btn-sm px-3 rounded-pill">
+                                    <i class="fas fa-check me-1"></i>Approve
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <div class="mb-4">
+                    <div class="bg-success-subtle d-inline-block p-4 rounded-circle mb-3">
+                         <i class="fas fa-check fa-4x text-success"></i>
+                    </div>
+                </div>
+                <h5 class="text-white fw-bold">All Requests Processed</h5>
+                <p class="text-white-50 small">There are no pending certificates requiring your approval at this time.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- History Tab -->
+        <div id="tab-history" class="tab-pane d-none animated fadeIn">
+            <h4 class="mb-4 text-white fs-5 opacity-75 fw-bold">Approved History</h4>
+            {% if approved_certs %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Event Name</th>
+                            <th>Event Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cert in approved_certs %}
+                        <tr>
+                            <td class="fw-bold text-success">{{ cert.student_name }}</td>
+                            <td>{{ cert.event_name }}</td>
+                            <td>{{ cert.event_date }}</td>
+                            <td><span class="badge bg-success-subtle text-success border border-success border-opacity-25 px-3 py-2"><i class="fas fa-check-circle me-1"></i>Approved</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <div class="mb-3 opacity-25">
+                    <i class="fas fa-archive fa-4x text-white"></i>
+                </div>
+                <p class="text-white-50">Empty Archive. No certificates have been approved yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    function showTab(type) {
+        // Toggle Panes
+        document.getElementById('tab-pending').classList.toggle('d-none', type === 'history');
+        document.getElementById('tab-history').classList.toggle('d-none', type === 'pending');
+        
+        // Toggle Buttons
+        const pendingBtn = document.getElementById('btn-pending');
+        const historyBtn = document.getElementById('btn-history');
+        
+        if (type === 'pending') {
+            pendingBtn.classList.add('btn-primary', 'active');
+            pendingBtn.classList.remove('btn-outline-primary');
+            historyBtn.classList.add('btn-outline-primary');
+            historyBtn.classList.remove('btn-primary', 'active');
+        } else {
+            historyBtn.classList.add('btn-primary', 'active');
+            historyBtn.classList.remove('btn-outline-primary');
+            pendingBtn.classList.add('btn-outline-primary');
+            pendingBtn.classList.remove('btn-primary', 'active');
+        }
+    }
+</script>
+{% endblock %}

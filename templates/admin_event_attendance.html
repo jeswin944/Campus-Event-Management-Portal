@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - Event Attendance Overview{% endblock %}
+{% block body_class %}admin-page-bg{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-md-center flex-column flex-md-row mb-4 gap-3">
+        <h3 class="fw-bold text-white mb-0">
+            <i class="fas fa-calendar-check me-2 text-success"></i>Event Attendance Overview
+        </h3>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('admin.daily_attendance_list') }}" class="btn btn-warning fw-bold shadow-sm">
+                <i class="fas fa-clipboard-list me-1"></i>View Duty Leave Attendance
+            </a>
+            <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-back-theme px-3">
+                <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Analytics Summary -->
+    <div class="row g-3 mb-4">
+        {% set total_reg = event_records|sum(attribute='total_registered') %}
+        {% set total_pres = event_records|sum(attribute='present_count') %}
+        <div class="col-md-6">
+            <div class="card glass-panel border-0 p-3 text-center">
+                <h6 class="text-white-50 small text-uppercase fw-bold">Total Event Registrations</h6>
+                <h2 class="text-white fw-bold mb-0">{{ total_reg }}</h2>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card glass-panel border-0 p-3 text-center border-start border-success border-4">
+                <h6 class="text-white-50 small text-uppercase fw-bold">Total Students Attended</h6>
+                <h2 class="text-success fw-bold mb-0">{{ total_pres }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event List Card -->
+    <div class="card glass-panel border-0 shadow-lg overflow-hidden">
+        <div class="card-header bg-white bg-opacity-10 border-0 p-3">
+            <h5 class="text-white mb-0">Attendance Status by Event</h5>
+        </div>
+        <div class="card-body p-0">
+            {% if event_records %}
+            <div class="table-responsive">
+                <table class="table table-hover text-white align-middle mb-0">
+                    <thead class="table-dark bg-transparent">
+                        <tr>
+                            <th class="ps-4">Event Name</th>
+                            <th>Date</th>
+                            <th>Type/Dept</th>
+                            <th class="text-center">Registered</th>
+                            <th class="text-center">Attended</th>
+                            <th class="text-center">Percentage</th>
+                            <th class="text-end pe-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for event in event_records %}
+                        <tr>
+                            <td class="ps-4">
+                                <div class="fw-bold text-white">{{ event.event_name }}</div>
+                                <span class="badge bg-dark text-white-50" style="font-size: 0.7rem;">{{ event.event_id }}</span>
+                            </td>
+                            <td>{{ event.event_date }}</td>
+                            <td>
+                                <div class="small text-white-50">{{ event.event_type }}</div>
+                                <div class="small fw-bold text-info">{{ event.department }}</div>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-secondary rounded-pill px-3">{{ event.total_registered }}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-success rounded-pill px-3">{{ event.present_count }}</span>
+                            </td>
+                            <td class="text-center">
+                                {% if event.total_registered > 0 %}
+                                    {% set pct = (event.present_count / event.total_registered * 100)|round|int %}
+                                    {% set pct_style = "width: " ~ pct ~ "%;" %}
+                                    <div class="progress bg-dark" style="height: 6px; width: 80px; margin: 0 auto;">
+                                        <div class="progress-bar bg-success" role="progressbar" 
+                                             aria-valuenow="{{ pct }}" aria-valuemin="0" aria-valuemax="100" 
+                                             {{ ("style='" ~ pct_style ~ "'")|safe }}></div>
+                                    </div>
+                                    <span class="text-white-50 mt-1 d-block" style="font-size: 0.7rem;">{{ (pct|string) ~ '%' }}</span>
+                                {% else %}
+                                    <span class="text-muted small">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end pe-4">
+                                <a href="{{ url_for('faculty.manage_attendance', event_id=event.event_id) }}" 
+                                   class="btn btn-sm btn-outline-info load-page">
+                                    <i class="fas fa-eye me-1"></i>View / Edit
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-calendar-times fa-4x text-white-10 mb-3"></i>
+                <p class="text-white-50">No events found in the system yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

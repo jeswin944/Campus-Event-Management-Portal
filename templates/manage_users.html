@@ -1,0 +1,441 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Users{% endblock %}
+{% block body_class %}admin-page-bg{% endblock %}
+
+{% block content %}
+
+{# ── helper macro: NIE23CS = "Student", others = "Inter_Student" ─────────── #}
+{% macro student_type_badge(reg_no) %}
+{% if reg_no and reg_no.upper().startswith('NIE23CS') %}
+<span class="badge fw-bold px-2 py-1"
+    style="background:linear-gradient(135deg,#4361ee,#7209b7); border-radius:20px; font-size:.7rem; white-space:nowrap;">
+    <i class="fas fa-star me-1"></i>Student
+</span>
+{% else %}
+<span class="badge fw-bold px-2 py-1"
+    style="background:linear-gradient(135deg,#4cc9f0,#0077b6); color:#000; border-radius:20px; font-size:.7rem; white-space:nowrap;">
+    <i class="fas fa-globe me-1"></i>Inter_Student
+</span>
+{% endif %}
+{% endmacro %}
+
+<div class="row mb-3">
+    <div class="col-md-8">
+        <h2><i class="fas fa-users-cog me-2"></i>Manage Users</h2>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-secondary load-page">
+            <i class="fas fa-arrow-left me-1"></i> Dashboard
+        </a>
+    </div>
+</div>
+
+{# ── count NIE23CS vs Inter_Student ────────────────────────────────────────── #}
+
+{# Simple: count via loop in Jinja #}
+{% set ns = namespace(nie=0, inter=0) %}
+{% for s in students %}
+{% if s.register_number and s.register_number.upper().startswith('NIE23CS') %}
+{% set ns.nie = ns.nie + 1 %}
+{% else %}
+{% set ns.inter = ns.inter + 1 %}
+{% endif %}
+{% endfor %}
+
+
+<!-- ═══════ TABS ═══════ -->
+<ul class="nav nav-tabs mb-4" id="userTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active fw-bold" id="students-tab" data-bs-toggle="tab" data-bs-target="#students"
+            type="button" role="tab">
+            <i class="fas fa-users me-1"></i>All Students ({{ students|length }})
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link fw-bold" id="nie-tab" data-bs-toggle="tab" data-bs-target="#nie-students" type="button"
+            role="tab">
+            <i class="fas fa-star me-1 text-primary"></i>Students
+            <span class="badge ms-1" style="background:#4361ee;">{{ ns.nie }}</span>
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link fw-bold" id="inter-tab" data-bs-toggle="tab" data-bs-target="#inter-students"
+            type="button" role="tab">
+            <i class="fas fa-globe me-1 text-info"></i>Inter_Students
+            <span class="badge bg-info text-dark ms-1">{{ ns.inter }}</span>
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link fw-bold" id="faculty-tab" data-bs-toggle="tab" data-bs-target="#faculty" type="button"
+            role="tab">
+            <i class="fas fa-chalkboard-teacher me-1"></i> Faculty ({{ faculty|length }})
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="userTabsContent">
+
+    <!-- ═══ ALL STUDENTS ═══ -->
+    <div class="tab-pane fade show active" id="students" role="tabpanel">
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered data-table">
+                <thead class="table-light">
+                    <tr>
+                        <th>Type</th>
+                        <th>Reg No</th>
+                        <th>Name</th>
+                        <th>Department</th>
+                        <th>Email</th>
+                        <th>Semester</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    <tr>
+                        <td>{{ student_type_badge(student.register_number) }}</td>
+                        <td><code>{{ student.register_number }}</code></td>
+                        <td>{{ student.name }}</td>
+                        <td><span class="badge bg-info text-dark">{{ student.department }}</span></td>
+                        <td class="small">{{ student.email }}</td>
+                        <td>{{ student.semester }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary edit-student-btn"
+                                data-id="{{ student.student_id }}" data-name="{{ student.name }}"
+                                data-email="{{ student.email }}" data-reg="{{ student.register_number }}"
+                                data-dept="{{ student.department }}" data-sem="{{ student.semester }}" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger delete-user-btn"
+                                data-href="{{ url_for('admin.delete_student', id=student.student_id) }}" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center">No students registered.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ═══ NIE23CS STUDENTS ONLY ═══ -->
+    <div class="tab-pane fade" id="nie-students" role="tabpanel">
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered">
+                <thead class="table-light">
+                    <tr>
+                        <th>Type</th>
+                        <th>Reg No</th>
+                        <th>Name</th>
+                        <th>Department</th>
+                        <th>Email</th>
+                        <th>Semester</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% set found = [] %}
+                    {% for student in students %}
+                    {% if student.register_number and student.register_number.upper().startswith('NIE23CS') %}
+                    {% set _ = found.append(1) %}
+                    <tr>
+                        <td>{{ student_type_badge(student.register_number) }}</td>
+                        <td><code class="text-primary fw-bold">{{ student.register_number }}</code></td>
+                        <td>{{ student.name }}</td>
+                        <td><span class="badge bg-info text-dark">{{ student.department }}</span></td>
+                        <td class="small">{{ student.email }}</td>
+                        <td>{{ student.semester }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary edit-student-btn"
+                                data-id="{{ student.student_id }}" data-name="{{ student.name }}"
+                                data-email="{{ student.email }}" data-reg="{{ student.register_number }}"
+                                data-dept="{{ student.department }}" data-sem="{{ student.semester }}" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger delete-user-btn"
+                                data-href="{{ url_for('admin.delete_student', id=student.student_id) }}" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                    {% if not found %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            <i class="fas fa-star fa-2x mb-2 d-block opacity-25"></i>
+                            No NIE23CS students registered yet.
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ═══ INTER STUDENTS ONLY ═══ -->
+    <div class="tab-pane fade" id="inter-students" role="tabpanel">
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered">
+                <thead class="table-light">
+                    <tr>
+                        <th>Type</th>
+                        <th>Reg No</th>
+                        <th>Name</th>
+                        <th>Department</th>
+                        <th>Email</th>
+                        <th>Semester</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% set found2 = [] %}
+                    {% for student in students %}
+                    {% if not (student.register_number and student.register_number.upper().startswith('NIE23CS')) %}
+                    {% set _ = found2.append(1) %}
+                    <tr>
+                        <td>{{ student_type_badge(student.register_number) }}</td>
+                        <td><code class="text-info fw-bold">{{ student.register_number }}</code></td>
+                        <td>{{ student.name }}</td>
+                        <td><span class="badge bg-warning text-dark">{{ student.department }}</span></td>
+                        <td class="small">{{ student.email }}</td>
+                        <td>{{ student.semester }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary edit-student-btn"
+                                data-id="{{ student.student_id }}" data-name="{{ student.name }}"
+                                data-email="{{ student.email }}" data-reg="{{ student.register_number }}"
+                                data-dept="{{ student.department }}" data-sem="{{ student.semester }}" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger delete-user-btn"
+                                data-href="{{ url_for('admin.delete_student', id=student.student_id) }}" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                    {% if not found2 %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            <i class="fas fa-globe fa-2x mb-2 d-block opacity-25"></i>
+                            No Inter_Students registered yet.
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ═══ FACULTY ═══ -->
+    <div class="tab-pane fade" id="faculty" role="tabpanel">
+        <div class="mb-3 text-end">
+            <a href="{{ url_for('admin.register_faculty') }}" class="btn btn-success btn-sm">
+                <i class="fas fa-plus me-1"></i> Add New Faculty
+            </a>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered">
+                <thead class="table-light">
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Department</th>
+                        <th>Role</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for f in faculty %}
+                    <tr>
+                        <td>{{ f.name }}</td>
+                        <td>{{ f.email }}</td>
+                        <td><span class="badge bg-warning text-dark">{{ f.department }}</span></td>
+                        <td>
+                            {% if f.is_admin %}
+                            <span class="badge bg-danger">Admin</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Faculty</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary edit-faculty-btn" data-id="{{ f.faculty_id }}"
+                                data-name="{{ f.name }}" data-email="{{ f.email }}" data-dept="{{ f.department }}"
+                                title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            {% if not f.is_admin %}
+                            <button class="btn btn-sm btn-outline-danger delete-user-btn"
+                                data-href="{{ url_for('admin.delete_faculty', id=f.faculty_id) }}" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center">No faculty registered.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div><!-- end tab-content -->
+
+<!-- Edit Student Modal -->
+<div class="modal fade" id="editStudentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-ui text-dark">
+            <div class="modal-header border-0">
+                <h5 class="modal-title">Edit Student Information</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editStudentForm" method="POST" action="">
+                    <div class="mb-3">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" name="name" id="editStuName" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Register Number</label>
+                        <input type="text" name="register_number" id="editStuReg" class="form-control" required>
+                        <div class="form-text" id="editStuTypeHint"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" id="editStuEmail" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Department</label>
+                        <input type="text" name="department" id="editStuDept" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Semester</label>
+                        <select name="semester" id="editStuSem" class="form-select" required>
+                            {% for i in range(1, 9) %}
+                            <option value="{{ i }}">{{ i }}th Semester</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Faculty Modal -->
+<div class="modal fade" id="editFacultyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-ui text-dark">
+            <div class="modal-header border-0">
+                <h5 class="modal-title">Edit Faculty Information</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editFacultyForm" method="POST" action="">
+                    <div class="mb-3">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" name="name" id="editFacName" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" name="email" id="editFacEmail" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Department</label>
+                        <input type="text" name="department" id="editFacDept" class="form-control" required>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-ui text-center p-4 border-0">
+            <div class="modal-body">
+                <div class="mb-3">
+                    <i class="fas fa-exclamation-triangle fa-5x text-warning"></i>
+                </div>
+                <h4 class="mt-3 fw-bold text-danger">Are you sure?</h4>
+                <p class="mb-4 text-muted">Do you really want to delete this user? This process cannot be undone.</p>
+                <div class="d-flex justify-content-center gap-3">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <a id="confirmDeleteAction" href="#" class="btn btn-danger load-page">Delete User</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Student Edit Modal
+        document.querySelectorAll('.edit-student-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const reg = this.getAttribute('data-reg');
+                document.getElementById('editStuName').value = this.getAttribute('data-name');
+                document.getElementById('editStuEmail').value = this.getAttribute('data-email');
+                document.getElementById('editStuReg').value = reg;
+                document.getElementById('editStuDept').value = this.getAttribute('data-dept');
+                document.getElementById('editStuSem').value = this.getAttribute('data-sem');
+                document.getElementById('editStudentForm').action = `/admin/edit-student/${this.getAttribute('data-id')}`;
+
+                // Show student type hint in modal
+                const hint = document.getElementById('editStuTypeHint');
+                if (reg && reg.toUpperCase().startsWith('NIE23CS')) {
+                    hint.innerHTML = '<span class="text-primary fw-bold"><i class="fas fa-star me-1"></i>Type: Student (NIE23CS)</span>';
+                } else {
+                    hint.innerHTML = '<span class="text-info fw-bold"><i class="fas fa-globe me-1"></i>Type: Inter_Student</span>';
+                }
+                new bootstrap.Modal(document.getElementById('editStudentModal')).show();
+            });
+        });
+
+        // Live update hint when reg is changed in modal
+        document.getElementById('editStuReg').addEventListener('input', function () {
+            const hint = document.getElementById('editStuTypeHint');
+            if (this.value.toUpperCase().startsWith('NIE23CS')) {
+                hint.innerHTML = '<span class="text-primary fw-bold"><i class="fas fa-star me-1"></i>Type: Student (NIE23CS)</span>';
+            } else {
+                hint.innerHTML = '<span class="text-info fw-bold"><i class="fas fa-globe me-1"></i>Type: Inter_Student</span>';
+            }
+        });
+
+        // Faculty Edit Modal
+        document.querySelectorAll('.edit-faculty-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                document.getElementById('editFacName').value = this.getAttribute('data-name');
+                document.getElementById('editFacEmail').value = this.getAttribute('data-email');
+                document.getElementById('editFacDept').value = this.getAttribute('data-dept');
+                document.getElementById('editFacultyForm').action = `/admin/edit-faculty/${this.getAttribute('data-id')}`;
+                new bootstrap.Modal(document.getElementById('editFacultyModal')).show();
+            });
+        });
+
+        // Delete Confirmation
+        document.querySelectorAll('.delete-user-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                document.getElementById('confirmDeleteAction').href = this.getAttribute('data-href');
+                new bootstrap.Modal(document.getElementById('deleteConfirmModal')).show();
+            });
+        });
+    });
+</script>
+{% endblock %}

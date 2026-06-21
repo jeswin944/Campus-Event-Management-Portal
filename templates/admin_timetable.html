@@ -1,0 +1,724 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Master Timetable{% endblock %}
+{% block body_class %}admin-page-bg{% endblock %}
+
+{% block content %}
+<style>
+    .timetable-matrix th { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
+    .period-cell { background: rgba(255,255,255,0.02); min-height: 80px; }
+    .period-cell:hover { background: rgba(255,255,255,0.05); }
+    .timetable-slot { position: relative; border-left-width: 4px !important; text-align: left; }
+    .slot-actions { opacity: 0; transition: opacity 0.2s; }
+    .timetable-slot:hover .slot-actions { opacity: 1; }
+    .border-dashed { border-style: dashed !important; border-width: 2px !important; }
+    .btn-xs { padding: 0.1rem 0.3rem; font-size: 0.7rem; }
+    .fw-800 { font-weight: 800; }
+    .extra-small { font-size: 0.65rem; line-height: 1.2; }
+</style>
+<div class="row mb-3">
+    <div class="col-md-8">
+        <h2><i class="fas fa-calendar-alt me-2"></i>Time Table Management</h2>
+    </div>
+    <div class="col-md-12 text-end d-flex justify-content-end gap-2">
+        <button class="btn btn-outline-danger fw-bold shadow-sm" onclick="confirmClearAll()">
+            <i class="fas fa-trash-alt me-1"></i> Clear All
+        </button>
+    </div>
+</div>
+
+<!-- Timetable View -->
+<div class="card shadow-sm glass-ui">
+    <div class="card-body">
+        <div class="table-responsive">
+            <div class="alert alert-info py-2 small mb-3">
+                <i class="fas fa-info-circle me-1"></i> Current View: <strong>Standard Matrix Format</strong> (Click + to add slots, or use the menu below for custom timings).
+            </div>
+            <table class="table table-bordered text-center align-middle timetable-matrix mb-0">
+                <thead class="bg-dark text-white shadow-sm">
+                    <tr>
+                        <th class="p-3 bg-secondary text-white" style="min-width: 100px;">Day</th>
+                        {% for p in standard_periods %}
+                        <th class="p-3">{{ p.label }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for day, day_slots in timetable_matrix.items() %}
+                    <tr>
+                        <th class="bg-light fw-bold text-primary p-3">{{ day }}</th>
+                        {% for period in standard_periods %}
+                        <td class="p-1 period-cell" style="min-width: 120px;">
+                            {% set ns = namespace(found=false) %}
+                            {% for slot in day_slots %}
+                                {% set s_start = slot.start_time|string %}
+                                {% set p_start = period.start %}
+                                {# Normalizing 0:00:00 or 09:00:00 #}
+                                {% if s_start.startswith(p_start) or ('0' + s_start).startswith(p_start) or s_start == p_start %}
+                                    {% set ns.found = true %}
+                                    <div class="timetable-slot shadow-sm p-2 mb-1 rounded {% if not slot.course_id %}bg-danger-subtle text-danger border-danger{% else %}bg-primary-subtle text-primary border-primary{% endif %} border"
+                                         style="transition: all 0.2s;"
+                                         data-bs-toggle="tooltip" title="{{ slot.faculty_name or 'Break' }} - Room {{ slot.classroom or 'N/A' }}">
+                                        <div class="fw-800 small text-truncate" style="font-size: 0.75rem;">
+                                            {{ slot.course_name if slot.course_id else 'BREAK / INTERVAL' }}
+                                        </div>
+                                        <div class="extra-small opacity-75 d-block" style="font-size: 0.65rem;">
+                                            {{ slot.faculty_name or '---' }} | <strong>Sem {{ slot.semester }}</strong>
+                                        </div>
+                                        <div class="d-flex justify-content-center gap-2 mt-1 slot-actions">
+                                            <button class="btn btn-xs btn-link p-0 text-dark opacity-50 hover-opacity-100 edit-slot-grid-btn" 
+                                                    data-slot='{{ slot|tojson|safe }}'>
+                                                <i class="fas fa-edit"></i>
+                                            <button class="btn btn-xs btn-link p-0 text-danger opacity-50 hover-opacity-100 delete-slot-grid-btn"
+                                               data-id="{{ slot.timetable_id }}">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if not ns.found %}
+                                <button class="btn btn-sm btn-outline-light text-muted w-100 border-dashed py-3 opacity-25 hover-opacity-100" 
+                                        onclick="quickAddSlot('{{ day }}', '{{ period.start }}', '{{ period.end }}')">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Slot Modal -->
+<div class="modal fade" id="addSlotModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-ui text-dark shadow-lg">
+            <div class="modal-header border-0 bg-primary text-white">
+                <h5 class="modal-title fw-bold"><i class="fas fa-plus-circle me-2"></i>Assign Class or Break</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form action="{{ url_for('admin.manage_timetable') }}" method="POST">
+                    <input type="hidden" name="day" id="add_day">
+
+                    <div
+                        class="form-check form-switch mb-4 p-3 bg-light rounded-3 border border-primary border-opacity-10">
+                        <input class="form-check-input ms-0" type="checkbox" name="is_break" id="isBreakToggle"
+                            onchange="toggleBreakFields()">
+                        <label class="form-check-label ms-2 fw-bold text-primary" for="isBreakToggle">
+                            <i class="fas fa-coffee me-1"></i> This is a Break / Interval Slot
+                        </label>
+                    </div>
+
+                    <div id="standardFields">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Course</label>
+                            <select name="course_id" id="course_id" class="form-select" required>
+                                <option value="">Select Course...</option>
+                                {% for c in courses %}
+                                <option value="{{ c.course_id }}">{{ c.course_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Faculty Coordinator</label>
+                            <select name="faculty_id" id="faculty_id" class="form-select" required>
+                                <option value="">Select Faculty...</option>
+                                {% for f in faculty_list %}
+                                <option value="{{ f.faculty_id }}">{{ f.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Classroom</label>
+                            <input type="text" name="classroom" id="classroom" class="form-control"
+                                placeholder="e.g. Room 305" required>
+                        </div>
+                    </div>
+
+                    <div id="deptSemFields">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label small fw-bold text-muted">Department</label>
+                                <input type="text" name="department" id="department" class="form-control"
+                                    placeholder="e.g. CSE">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label small fw-bold text-muted">Semester</label>
+                                <select name="semester" id="semester" class="form-select">
+                                    <option value="">Select...</option>
+                                    {% for i in range(1, 9) %}
+                                    <option value="{{ i }}">{{ i }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">Day(s) of Week</label>
+                        <div class="p-3 bg-light rounded-3 border">
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="allDaysToggle"
+                                    onchange="toggleAllDays(this)">
+                                <label class="form-check-label fw-bold text-primary" for="allDaysToggle">
+                                    <i class="fas fa-calendar-check me-1"></i> All Days (Mon – Sat)
+                                </label>
+                            </div>
+                            <hr class="my-2">
+                            <div class="row g-2">
+                                {% for d in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] %}
+                                <div class="col-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input day-checkbox" type="checkbox" name="days"
+                                            value="{{ d }}" id="day_{{ d }}">
+                                        <label class="form-check-label" for="day_{{ d }}">{{ d }}</label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Period Picker -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">
+                            <i class="fas fa-bolt me-1 text-warning"></i>Quick Period Picker
+                            <span class="text-muted fw-normal ms-1">(9:00 AM – 4:00 PM)</span>
+                        </label>
+                        <div class="d-flex flex-wrap gap-2 p-3 bg-light rounded-3 border">
+                            <button type="button" class="btn btn-sm btn-outline-primary fw-bold"
+                                onclick="setPeriod('09:00','10:00')">P1<br><small>9:00–10:00</small></button>
+                            <button type="button" class="btn btn-sm btn-outline-primary fw-bold"
+                                onclick="setPeriod('10:00','11:00')">P2<br><small>10:00–11:00</small></button>
+                            <button type="button" class="btn btn-sm btn-outline-danger fw-bold"
+                                onclick="setPeriod('11:00','11:10')">Break<br><small>11:00–11:10</small></button>
+                            <button type="button" class="btn btn-sm btn-outline-primary fw-bold"
+                                onclick="setPeriod('11:10','12:10')">P3<br><small>11:10–12:10</small></button>
+                            <button type="button" class="btn btn-sm btn-outline-warning fw-bold text-dark"
+                                onclick="setPeriod('12:10','12:50')">Lunch<br><small>12:10–12:50</small></button>
+                            <button type="button" class="btn btn-sm btn-outline-primary fw-bold"
+                                onclick="setPeriod('12:50','13:50')">P4<br><small>12:50–1:50</small></button>
+                            <button type="button" class="btn btn-sm btn-outline-danger fw-bold"
+                                onclick="setPeriod('13:50','14:00')">Break<br><small>1:50–2:00</small></button>
+                            <button type="button" class="btn btn-sm btn-outline-primary fw-bold"
+                                onclick="setPeriod('14:00','15:00')">P5<br><small>2:00–3:00</small></button>
+                            <button type="button" class="btn btn-sm btn-outline-primary fw-bold"
+                                onclick="setPeriod('15:00','16:00')">P6<br><small>3:00–4:00</small></button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary fw-bold"
+                                onclick="setPeriod('09:00','16:00')">Full Day<br><small>9:00–4:00</small></button>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label small fw-bold text-muted">Start Time</label>
+                            <div class="input-group">
+                                <input type="time" name="start_time" id="add_start_time" class="form-control" required
+                                    oninput="updateAmPm('add_start_time','add_start_ampm')">
+                                <span class="input-group-text fw-bold" id="add_start_ampm"
+                                    style="min-width:54px; justify-content:center;">--</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label small fw-bold text-muted">End Time</label>
+                            <div class="input-group">
+                                <input type="time" name="end_time" id="add_end_time" class="form-control" required
+                                    oninput="updateAmPm('add_end_time','add_end_ampm')">
+                                <span class="input-group-text fw-bold" id="add_end_ampm"
+                                    style="min-width:54px; justify-content:center;">--</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid mt-4">
+                        <button type="button" class="btn btn-primary btn-lg fw-bold shadow"
+                            onclick="submitMultiDaySlot(this)">
+                            <i class="fas fa-save me-2"></i>Assign Schedule
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Slot Modal -->
+<div class="modal fade" id="editSlotModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-ui text-dark shadow-2xl">
+            <div class="modal-header border-0 bg-warning">
+                <h5 class="modal-title fw-bold text-dark"><i class="fas fa-edit me-2"></i>Edit Schedule Slot</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form action="{{ url_for('admin.edit_timetable_slot_admin') }}" method="POST">
+                    <input type="hidden" name="slot_id" id="edit_slot_id">
+
+                    <div
+                        class="form-check form-switch mb-3 p-2 bg-light rounded shadow-sm border align-items-center d-flex">
+                        <input class="form-check-input ms-0" type="checkbox" name="is_break" id="editIsBreakToggle"
+                            onchange="toggleEditBreakFields()">
+                        <label class="form-check-label ms-3 fw-bold text-dark mb-0" for="editIsBreakToggle">
+                            Interval / Break
+                        </label>
+                    </div>
+
+                    <div id="editStandardFields">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Course</label>
+                            <select name="course_id" id="edit_course_id" class="form-select">
+                                <option value="">Select Course...</option>
+                                {% for c in courses %}
+                                <option value="{{ c.course_id }}">{{ c.course_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Faculty</label>
+                            <select name="faculty_id" id="edit_faculty_id" class="form-select">
+                                <option value="">Select Faculty...</option>
+                                {% for f in faculty_list %}
+                                <option value="{{ f.faculty_id }}">{{ f.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Room</label>
+                            <input type="text" name="classroom" id="edit_classroom" class="form-control"
+                                placeholder="Room #">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label small fw-bold text-muted">Department</label>
+                            <input type="text" name="department" id="edit_department" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label small fw-bold text-muted">Semester</label>
+                            <select name="semester" id="edit_semester" class="form-select">
+                                <option value="">Select...</option>
+                                {% for i in range(1, 9) %}
+                                <option value="{{ i }}">{{ i }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">Apply To Day(s)</label>
+                        <div class="p-3 bg-light rounded-3 border">
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="editAllDaysToggle"
+                                    onchange="toggleEditAllDays(this)">
+                                <label class="form-check-label fw-bold text-primary" for="editAllDaysToggle">
+                                    <i class="fas fa-calendar-check me-1"></i> Update Multiple Days
+                                </label>
+                            </div>
+                            <hr class="my-2">
+                            <div class="row g-2">
+                                {% for d in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] %}
+                                <div class="col-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input edit-day-checkbox" type="checkbox"
+                                            name="edit_days" value="{{ d }}" id="edit_day_{{ d }}">
+                                        <label class="form-check-label" for="edit_day_{{ d }}">{{ d }}</label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label small fw-bold text-muted">Start</label>
+                            <div class="input-group">
+                                <input type="time" name="start_time" id="edit_start_time" class="form-control" required
+                                    oninput="updateAmPm('edit_start_time','edit_start_ampm')">
+                                <span class="input-group-text fw-bold" id="edit_start_ampm"
+                                    style="min-width:54px; justify-content:center;">--</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label small fw-bold text-muted">End</label>
+                            <div class="input-group">
+                                <input type="time" name="end_time" id="edit_end_time" class="form-control" required
+                                    oninput="updateAmPm('edit_end_time','edit_end_ampm')">
+                                <span class="input-group-text fw-bold" id="edit_end_ampm"
+                                    style="min-width:54px; justify-content:center;">--</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid mt-4">
+                        <button type="button" class="btn btn-warning fw-bold text-dark"
+                            onclick="submitEditMultiDaySlot(this)">
+                            <i class="fas fa-sync-alt me-2"></i>Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI Import Modal moved before scripts to ensure IDs exist -->
+<!-- AI Scripts Removed -->
+<script type="application/json" id="coursesData">
+[{% for c in courses %}{"id":{{ c.course_id }},"name":"{{ c.course_name|e }}","dept":"{{ c.department|e }}","sem":"{{ c.semester|e }}"}{% if not loop.last %},{% endif %}{% endfor %}]
+</script>
+<script type="application/json" id="facultyData">
+[{% for f in faculty_list %}{"id":{{ f.faculty_id }},"name":"{{ f.name|e }}"}{% if not loop.last %},{% endif %}{% endfor %}]
+</script>
+<script>
+    if (typeof pdfjsLib !== 'undefined') {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+
+    function toggleBreakFields() {
+        const isBreak = document.getElementById('isBreakToggle').checked;
+        const fields = ['course_id', 'faculty_id', 'classroom'];
+        const standardFieldsDiv = document.getElementById('standardFields');
+
+        if (isBreak) {
+            standardFieldsDiv.style.opacity = '0.5';
+            fields.forEach(id => {
+                const el = document.getElementById(id);
+                el.removeAttribute('required');
+                el.disabled = true;
+            });
+            document.getElementById('department').setAttribute('required', 'required');
+            document.getElementById('semester').setAttribute('required', 'required');
+        } else {
+            standardFieldsDiv.style.opacity = '1';
+            fields.forEach(id => {
+                const el = document.getElementById(id);
+                el.setAttribute('required', 'required');
+                el.disabled = false;
+            });
+            document.getElementById('department').removeAttribute('required');
+            document.getElementById('semester').removeAttribute('required');
+        }
+    }
+
+    // AI Import Logic — data embedded as JSON to avoid Jinja2/JS linter conflicts
+    const COURSES = JSON.parse(document.getElementById('coursesData').textContent);
+    const FACULTY = JSON.parse(document.getElementById('facultyData').textContent);
+
+    // AM/PM badge helper
+    function updateAmPm(inputId, badgeId) {
+        const val = document.getElementById(inputId)?.value;
+        const badge = document.getElementById(badgeId);
+        if (!badge) return;
+        if (!val) { badge.textContent = '--'; badge.className = 'input-group-text fw-bold'; return; }
+        const h = parseInt(val.split(':')[0], 10);
+        const isAM = h < 12;
+        badge.textContent = isAM ? 'AM' : 'PM';
+        badge.className = 'input-group-text fw-bold ' + (isAM ? 'text-primary' : 'text-danger');
+    }
+
+    // Quick Period Picker — fills both time inputs and refreshes AM/PM badges
+    function setPeriod(start, end) {
+        const startEl = document.getElementById('add_start_time');
+        const endEl = document.getElementById('add_end_time');
+        if (startEl) { startEl.value = start; updateAmPm('add_start_time', 'add_start_ampm'); }
+        if (endEl) { endEl.value = end; updateAmPm('add_end_time', 'add_end_ampm'); }
+        // Highlight selected button, clear others
+        document.querySelectorAll('[onclick^="setPeriod"]').forEach(btn => {
+            btn.classList.remove('active', 'btn-primary', 'btn-warning', 'btn-danger', 'btn-secondary');
+        });
+    }
+
+    function fillEditModal(btn) {
+        document.getElementById('edit_slot_id').value = btn.dataset.slotId;
+        document.getElementById('edit_course_id').value = btn.dataset.courseId;
+        document.getElementById('edit_faculty_id').value = btn.dataset.facultyId;
+        document.getElementById('edit_day').value = btn.dataset.day;
+        document.getElementById('edit_start_time').value = btn.dataset.start;
+        document.getElementById('edit_end_time').value = btn.dataset.end;
+        document.getElementById('edit_classroom').value = btn.dataset.room;
+        document.getElementById('edit_department').value = btn.dataset.department || '';
+        document.getElementById('edit_semester').value = btn.dataset.semester || '';
+        document.getElementById('editIsBreakToggle').checked = btn.dataset.isBreak === 'true';
+        toggleEditBreakFields();
+        // Update AM/PM badges immediately
+        updateAmPm('edit_start_time', 'edit_start_ampm');
+        updateAmPm('edit_end_time', 'edit_end_ampm');
+
+        // Reset multi-day checkboxes in edit modal
+        document.getElementById('editAllDaysToggle').checked = false;
+        document.querySelectorAll('.edit-day-checkbox').forEach(cb => cb.checked = false);
+        // By default, check the day of the slot being edited
+        const currentDayCb = document.getElementById('edit_day_' + btn.dataset.day);
+        if (currentDayCb) currentDayCb.checked = true;
+    }
+
+    function toggleEditBreakFields() {
+        const isBreak = document.getElementById('editIsBreakToggle').checked;
+        const fields = ['edit_course_id', 'edit_faculty_id', 'edit_classroom'];
+        const standardFieldsDiv = document.getElementById('editStandardFields');
+        if (isBreak) {
+            standardFieldsDiv.style.opacity = '0.5';
+            fields.forEach(id => { const el = document.getElementById(id); el.required = false; el.disabled = true; });
+        } else {
+            standardFieldsDiv.style.opacity = '1';
+            fields.forEach(id => { const el = document.getElementById(id); el.required = true; el.disabled = false; });
+        }
+    }
+
+    function toggleAllDays(masterCb) {
+        document.querySelectorAll('.day-checkbox').forEach(cb => {
+            cb.checked = masterCb.checked;
+        });
+    }
+
+    function toggleEditAllDays(masterCb) {
+        document.querySelectorAll('.edit-day-checkbox').forEach(cb => {
+            cb.checked = masterCb.checked;
+        });
+    }
+
+    async function submitEditMultiDaySlot(btn) {
+        const form = btn.closest('form');
+        const selectedDays = Array.from(form.querySelectorAll('.edit-day-checkbox:checked')).map(cb => cb.value);
+
+        if (selectedDays.length === 0) {
+            alert('Please select at least one day to update.');
+            return;
+        }
+
+        const slotId = document.getElementById('edit_slot_id').value;
+        const isBreak = document.getElementById('editIsBreakToggle').checked;
+        const courseId = document.getElementById('edit_course_id').value || null;
+        const facultyId = document.getElementById('edit_faculty_id').value || null;
+        const startTime = document.getElementById('edit_start_time').value;
+        const endTime = document.getElementById('edit_end_time').value;
+        const classroom = document.getElementById('edit_classroom').value || '';
+        const department = document.getElementById('edit_department').value || '';
+        const semester = document.getElementById('edit_semester').value || '';
+
+        if (!isBreak && (!courseId || !facultyId)) {
+            alert('Please select a Course and Faculty.');
+            return;
+        }
+        if (!startTime || !endTime) {
+            alert('Please enter Start and End times.');
+            return;
+        }
+
+        btn.disabled = true;
+        const original = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Syncing...';
+
+        const slots = selectedDays.map(day => ({
+            day,
+            course_id: isBreak ? null : courseId,
+            faculty_id: isBreak ? null : facultyId,
+            start_time: startTime,
+            end_time: endTime,
+            classroom: isBreak ? 'N/A' : classroom,
+            department,
+            semester,
+            is_break: isBreak
+        }));
+
+        try {
+            const res = await fetch('/admin/bulk-update-timetable', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ slots })
+            });
+            const data = await res.json();
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert('Error: ' + (data.error || 'Unknown error'));
+                btn.disabled = false;
+                btn.innerHTML = original;
+            }
+        } catch (e) {
+            alert('Network error: ' + e.message);
+            btn.disabled = false;
+            btn.innerHTML = original;
+        }
+    }
+
+    async function submitMultiDaySlot(btn) {
+        const form = btn.closest('form');
+        const selectedDays = Array.from(form.querySelectorAll('.day-checkbox:checked')).map(cb => cb.value);
+
+        if (selectedDays.length === 0) {
+            alert('Please select at least one day.');
+            return;
+        }
+
+        const isBreak = form.querySelector('[name=is_break]')?.checked || false;
+        const courseId = form.querySelector('[name=course_id]')?.value || null;
+        const facultyId = form.querySelector('[name=faculty_id]')?.value || null;
+        const startTime = form.querySelector('[name=start_time]').value;
+        const endTime = form.querySelector('[name=end_time]').value;
+        const classroom = form.querySelector('[name=classroom]')?.value || '';
+        const department = form.querySelector('[name=department]')?.value || '';
+        const semester = form.querySelector('[name=semester]')?.value || '';
+
+        if (!isBreak && (!courseId || !facultyId)) {
+            alert('Please select a Course and Faculty before assigning.');
+            return;
+        }
+        if (!startTime || !endTime) {
+            alert('Please enter Start and End times.');
+            return;
+        }
+
+        btn.disabled = true;
+        const original = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving...';
+
+        const slots = selectedDays.map(day => ({
+            day,
+            course_id: isBreak ? null : courseId,
+            faculty_id: isBreak ? null : facultyId,
+            start_time: startTime,
+            end_time: endTime,
+            classroom: isBreak ? 'N/A' : classroom,
+            department,
+            semester,
+            is_break: isBreak
+        }));
+
+        try {
+            const res = await fetch('/admin/bulk-add-timetable', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ slots })
+            });
+            const data = await res.json();
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert('Error: ' + (data.error || 'Unknown error'));
+                btn.disabled = false;
+                btn.innerHTML = original;
+            }
+        } catch (e) {
+            alert('Network error: ' + e.message);
+            btn.disabled = false;
+            btn.innerHTML = original;
+        }
+    }
+
+    function quickAddSlot(day, start, end) {
+        document.getElementById('add_day').value = day;
+        document.querySelectorAll('.day-checkbox').forEach(cb => {
+            cb.checked = (cb.value === day);
+        });
+        setPeriod(start, end);
+        const modal = new bootstrap.Modal(document.getElementById('addSlotModal'));
+        modal.show();
+    }
+
+    function openEditFromGrid(slot) {
+        document.getElementById('edit_slot_id').value = slot.timetable_id;
+        document.getElementById('edit_course_id').value = slot.course_id || '';
+        document.getElementById('edit_faculty_id').value = slot.faculty_id || '';
+        document.getElementById('edit_day').value = slot.day;
+        document.getElementById('edit_start_time').value = slot.start_time;
+        document.getElementById('edit_end_time').value = slot.end_time;
+        document.getElementById('edit_classroom').value = slot.classroom || '';
+        document.getElementById('edit_department').value = slot.department || '';
+        document.getElementById('edit_semester').value = slot.semester || '';
+        document.getElementById('editIsBreakToggle').checked = !slot.course_id;
+        toggleEditBreakFields();
+        updateAmPm('edit_start_time', 'edit_start_ampm');
+        updateAmPm('edit_end_time', 'edit_end_ampm');
+        
+        document.querySelectorAll('.edit-day-checkbox').forEach(cb => cb.checked = (cb.value === slot.day));
+        const modal = new bootstrap.Modal(document.getElementById('editSlotModal'));
+        modal.show();
+    }
+
+    function confirmDeleteSlot(slotId) {
+        Swal.fire({
+            title: `<h4 class="fw-bold text-white mb-0">Delete this slot?</h4>`,
+            html: `
+                <div class="text-center p-2">
+                    <lottie-player src="https://assets9.lottiefiles.com/packages/lf20_myejioos.json" 
+                        background="transparent" speed="1" style="width: 120px; height: 120px; margin: 0 auto;" loop autoplay>
+                    </lottie-player>
+                    <p class="mt-3 text-secondary small">This action cannot be undone.</p>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel',
+            background: 'rgba(15, 15, 20, 0.98)',
+            color: '#fff',
+            backdrop: `rgba(0,0,0,0.6) blur(8px)`,
+            customClass: {
+                popup: 'glass-panel border-0 shadow-lg',
+                confirmButton: 'btn btn-danger px-4 mx-2',
+                cancelButton: 'btn btn-outline-light px-4 mx-2'
+            },
+            buttonsStyling: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = `/admin/delete-timetable-slot/${slotId}`;
+            }
+        });
+    }
+
+    function confirmClearAll() {
+        Swal.fire({
+            title: `<h4 class="fw-bold text-white mb-0">CRITICAL: Clear All?</h4>`,
+            html: `
+                <div class="text-center p-2">
+                    <lottie-player src="https://assets1.lottiefiles.com/packages/lf20_TkwjwX.json" 
+                        background="transparent" speed="1" style="width: 120px; height: 120px; margin: 0 auto;" loop autoplay>
+                    </lottie-player>
+                    <p class="mt-3 text-secondary small">This will permanently delete EVERY slot in the master timetable. Are you absolutely sure?</p>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Clear All!',
+            cancelButtonText: 'Cancel',
+            background: 'rgba(15, 15, 20, 0.98)',
+            color: '#fff',
+            backdrop: `rgba(0,0,0,0.6) blur(8px)`,
+            customClass: {
+                popup: 'glass-panel border-0 shadow-lg',
+                confirmButton: 'btn btn-danger px-4 mx-2',
+                cancelButton: 'btn btn-outline-light px-4 mx-2'
+            },
+            buttonsStyling: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = "{{ url_for('admin.delete_all_timetable') }}";
+            }
+        });
+    }
+
+    // Attach listeners for grid edit/delete buttons
+    document.addEventListener('click', function(e) {
+        const editBtn = e.target.closest('.edit-slot-grid-btn');
+        if (editBtn) {
+            const slot = JSON.parse(editBtn.dataset.slot);
+            openEditFromGrid(slot);
+        }
+
+        const deleteBtn = e.target.closest('.delete-slot-grid-btn');
+        if (deleteBtn) {
+            confirmDeleteSlot(deleteBtn.dataset.id);
+        }
+    });
+</script>
+{% endblock %}

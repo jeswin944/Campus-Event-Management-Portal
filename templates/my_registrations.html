@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Check event registrations{% endblock %}
+
+{% block content %}
+<h3 class="mb-4">Check Event Registrations</h3>
+
+<form method="POST" class="mb-4">
+    <div class="row">
+        <div class="col-md-4">
+            <input type="text" name="reg_no" class="form-control" placeholder="Register Number" required>
+        </div>
+        <div class="col-md-4">
+            <input type="email" name="email" class="form-control" placeholder="Email Address" required>
+        </div>
+        <div class="col-md-4">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search me-2"></i>Find Registrations
+            </button>
+        </div>
+    </div>
+</form>
+
+{% if registrations %}
+<div class="card glass-panel p-4 border-0">
+    <div class="table-responsive">
+        <table class="table table-hover text-white">
+            <thead class="table-dark">
+                <tr>
+                    <th>Event Name</th>
+                    <th>Date</th>
+                    <th>Location</th>
+                    <th>Status / Attendance</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in registrations %}
+                <tr>
+                    <td>{{ r.event_name }}</td>
+                    <td>{{ r.event_date }}</td>
+                    <td>{{ r.location }}</td>
+                    <td>
+                        {% if r.attendance == 'Present' %}
+                        <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i> Attended</span>
+                        {% else %}
+                        <span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i> Upcoming</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="mt-3 text-center">
+        <p class="text-secondary small"><i class="fas fa-info-circle me-1"></i> To cancel a registration, please <a
+                href="{{ url_for('auth.login') }}" class="text-primary text-decoration-none">Login</a> to your Student
+            Dashboard.</p>
+    </div>
+</div>
+
+{% elif request.method == 'POST' %}
+<div class="alert alert-info">
+    No registrations found for the given details.
+</div>
+{% endif %}
+
+{% endblock %}

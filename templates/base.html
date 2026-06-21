@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}eventora.{% endblock %}</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- Animate.css -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+
+    <!-- DataTables CSS for Pagination -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-dark@5/dark.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body class="{% block body_class %}{% endblock %}">
+
+    <!-- NAVIGATION BAR -->
+    <nav class="navbar navbar-expand-lg fixed-top">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="/">
+                <span class="brand-text">EVENTORA</span>
+            </a>
+
+            <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse"
+                data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item">
+                        <a class="nav-link load-page {{ 'active' if request.path == '/' }}" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link load-page {{ 'active' if '/events' in request.path }}"
+                            href="/events">Events</a>
+                    </li>
+
+                    {% if session.get('is_admin') %}
+                    <li class="nav-item">
+                        <a class="nav-link load-page" href="{{ url_for('admin.admin_dashboard') }}">
+                            <i class="fas fa-user-shield me-1"></i> Admin Dashboard
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% if session.get('role') == 'student' %}
+                    <li class="nav-item">
+                        <a class="nav-link load-page" href="{{ url_for('student.student_dashboard') }}">
+                            <i class="fas fa-graduation-cap me-1"></i> Dashboard
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% if session.get('role') == 'faculty' %}
+                    <li class="nav-item">
+                        <a class="nav-link load-page" href="{{ url_for('faculty.faculty_dashboard') }}">
+                            <i class="fas fa-chalkboard-teacher me-1"></i> Faculty Dashboard
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% if session.get('role') %}
+                    <!-- Notifications -->
+                    <li class="nav-item">
+                        <button class="btn btn-link nav-link position-relative border-0 shadow-none"
+                            id="notification-btn" data-bs-toggle="modal" data-bs-target="#notificationModal">
+                            <i class="fas fa-bell"></i>
+                            {% if unread_notifications > 0 %}
+                            <span class="position-absolute badge rounded-pill bg-danger" id="notification-badge"
+                                style="top: 5px; right: 5px; font-size: 0.6rem; padding: 0.35em 0.65em;">
+                                {{ unread_notifications }}
+                            </span>
+                            {% endif %}
+                        </button>
+                    </li>
+                    {% endif %}
+
+                    <!-- Theme Toggle -->
+                    <li class="nav-item">
+                        <button class="btn btn-link nav-link border-0 shadow-none" id="theme-toggle">
+                            <i class="fas fa-moon" id="theme-icon"></i>
+                        </button>
+                    </li>
+
+                    {% if session.get('role') %}
+                    <li class="nav-item ms-lg-2">
+                        <a class="btn btn-danger btn-sm px-4 load-page" href="/logout">Logout</a>
+                    </li>
+                    {% else %}
+                    <li class="nav-item ms-lg-2">
+                        <a class="btn btn-primary btn-sm px-4 load-page" href="/login">Login</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- CONTENT WRAPPER WITH MARGIN FOR FIXED NAVBAR -->
+    <div style="margin-top: 80px;"></div>
+
+    <!-- PAGE CONTENT -->
+    <div class="container py-4 page-content">
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show"
+            role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="footer mt-auto py-5 border-top border-opacity-10">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <h5 class="fw-bold mb-3 d-flex align-items-center">
+                        EVENTORA PORTAL
+                    </h5>
+                    <p class="text-secondary small">Unified Campus Event and Academic Management System. Empowering
+                        students and faculty with seamless digital integration.</p>
+                </div>
+                <div class="col-lg-2">
+                    <h6 class="fw-bold mb-3">Quick Links</h6>
+                    <ul class="list-unstyled small">
+                        <li><a href="/" class="text-secondary text-decoration-none hover-white">Home</a></li>
+                        <li><a href="/events" class="text-secondary text-decoration-none hover-white">All Events</a>
+                        </li>
+                        <li><a href="/login" class="text-secondary text-decoration-none hover-white">Portal Login</a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="col-lg-3">
+                    <h6 class="fw-bold mb-3">Support</h6>
+                    <ul class="list-unstyled small">
+                        <li><a href="#" class="text-secondary text-decoration-none hover-white">Help Center</a></li>
+                        <li><a href="#" class="text-secondary text-decoration-none hover-white">Campus Directory</a>
+                        </li>
+                        <li><a href="#" class="text-secondary text-decoration-none hover-white">IT Support</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-3">
+                    <h6 class="fw-bold mb-3">Contact</h6>
+                    <p class="text-secondary small mb-1"><i class="fas fa-envelope me-2"></i> info@uceams.edu</p>
+                    <p class="text-secondary small"><i class="fas fa-phone me-2"></i> +91 000 000 0000</p>
+                </div>
+            </div>
+            <hr class="my-4 opacity-10">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center opacity-50 small">
+                <p class="mb-0">&copy; 2026 EVENTORA. All Rights Reserved.</p>
+                <div class="d-flex gap-3 mt-2 mt-md-0">
+                    <a href="#" class="text-white"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" class="text-white"><i class="fab fa-twitter"></i></a>
+                    <a href="#" class="text-white"><i class="fab fa-linkedin-in"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <div id="page-loader">
+        <div class="loader-content">
+            <div class="loader-spinner"></div>
+            <h5 class="fw-bold">Loading...</h5>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- jQuery and DataTables JS for Pagination -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+
+    <!-- Lottie Player -->
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+
+    <!-- App Scripts -->
+    <!-- App Scripts (Logic is now internal above) -->
+
+    <!-- Success Animation Modal -->
+    <div class="modal fade" id="successAnimationModal" tabindex="-1" aria-hidden="true" style="z-index: 1070;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content glass-ui text-center p-4 border-0">
+                <div class="modal-body">
+                    <lottie-player src="https://assets2.lottiefiles.com/packages/lf20_s2lryxtd.json"
+                        background="transparent" speed="1" style="width: 200px; height: 200px; margin: 0 auto;" loop
+                        autoplay></lottie-player>
+                    <h4 class="mt-3 fw-bold text-success" id="successModalTitle">Success!</h4>
+                    <p id="successModalMessage" class="lead"></p>
+                    <button type="button" class="btn btn-success mt-3" data-bs-dismiss="modal">Continue</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Page Transition Logic
+        document.addEventListener('DOMContentLoaded', () => {
+            const loader = document.getElementById('page-loader');
+
+            // Fade out loader on load
+            window.addEventListener('load', () => {
+                setTimeout(() => {
+                    loader.classList.remove('active');
+                }, 300);
+            });
+
+            // Handle back/forward cache (fixes stuck loader)
+            window.addEventListener('pageshow', (event) => {
+                if (event.persisted || performance.getEntriesByType("navigation")[0].type === "back_forward") {
+                    loader.classList.remove('active');
+                }
+            });
+
+            // Selective Page Transition Logic
+            const transitionTrigger = (e, url) => {
+                e.preventDefault();
+                loader.classList.add('active');
+                setTimeout(() => {
+                    window.location.href = url;
+                }, 500);
+            };
+
+            // Trigger for specific links with .load-page class
+            document.querySelectorAll('a.load-page').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    const href = link.getAttribute('href');
+                    if (href && !href.startsWith('#')) {
+                        transitionTrigger(e, href);
+                    }
+                });
+            });
+
+            // Trigger for all form submissions (Create Event, Register Faculty, etc)
+            document.querySelectorAll('form').forEach(form => {
+                form.addEventListener('submit', () => {
+                    loader.classList.add('active');
+                    // Form will submit naturally after showing loader
+                });
+            });
+
+            // Dark Mode Toggle Logic
+            const toggleButton = document.getElementById('theme-toggle');
+            const themeIcon = document.getElementById('theme-icon');
+            const htmlElement = document.documentElement;
+
+            // Load saved theme
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            htmlElement.setAttribute('data-bs-theme', savedTheme);
+            updateIcon(savedTheme);
+
+            if (toggleButton) {
+                toggleButton.addEventListener('click', () => {
+                    const currentTheme = htmlElement.getAttribute('data-bs-theme');
+                    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+
+                    htmlElement.setAttribute('data-bs-theme', newTheme);
+                    localStorage.setItem('theme', newTheme);
+                    updateIcon(newTheme);
+                });
+            }
+
+            function updateIcon(theme) {
+                if (theme === 'dark') {
+                    themeIcon.classList.remove('fa-moon');
+                    themeIcon.classList.add('fa-sun');
+                } else {
+                    themeIcon.classList.remove('fa-sun');
+                    themeIcon.classList.add('fa-moon');
+                }
+            }
+
+            // Check for success flash messages
+            const successAlert = document.querySelector('.alert-success');
+            if (successAlert) {
+                const message = successAlert.innerText.trim();
+                const successModal = new bootstrap.Modal(document.getElementById('successAnimationModal'));
+                document.getElementById('successModalMessage').textContent = message;
+
+                const title = document.getElementById('successModalTitle');
+                if (message.toLowerCase().includes('event created')) {
+                    title.textContent = 'Event Created!';
+                } else if (message.toLowerCase().includes('registered')) {
+                    title.textContent = 'Registration Complete!';
+                } else {
+                    title.textContent = 'Success!';
+                }
+
+                successModal.show();
+                successAlert.classList.add('d-none');
+            }
+
+            // Notification Modal Logic
+            const notificationBtn = document.getElementById('notification-btn');
+            if (notificationBtn) {
+                notificationBtn.addEventListener('click', () => {
+                    fetch('/get-notifications')
+                        .then(response => response.json())
+                        .then(data => {
+                            const list = document.getElementById('notification-list');
+                            list.innerHTML = '';
+
+                            if (data.notifications.length === 0) {
+                                list.innerHTML = '<li class="list-group-item text-center text-muted bg-transparent">No notifications yet.</li>';
+                            } else {
+                                data.notifications.forEach(note => {
+                                    const date = new Date(note.created_at).toLocaleString();
+                                    list.innerHTML += `
+                                        <li class="list-group-item border-0 border-bottom bg-transparent">
+                                            <div class="small fw-bold text-primary mb-1">${date}</div>
+                                            <div class="${note.is_read ? '' : 'fw-bold'}">${note.message}</div>
+                                        </li>
+                                    `;
+                                });
+                            }
+
+                            // Remove badge after clicking
+                            const badge = document.getElementById('notification-badge');
+                            if (badge) badge.remove();
+                        });
+                });
+            }
+
+            // Global Confirmation Helper with Lottie
+            document.addEventListener('click', (e) => {
+                const target = e.target.closest('[data-confirm]');
+                if (target) {
+                    e.preventDefault();
+                    const message = target.getAttribute('data-confirm');
+                    const title = target.getAttribute('data-confirm-title') || 'Are you sure?';
+                    const confirmBtnText = target.getAttribute('data-confirm-btn') || 'Yes, Proceed';
+                    const iconType = target.getAttribute('data-confirm-icon') || 'question'; // question, warning, delete
+                    
+                    let lottieUrl = "https://assets8.lottiefiles.com/packages/lf20_bc9as3v9.json"; // Default Question
+                    if(iconType === 'warning') lottieUrl = "https://assets1.lottiefiles.com/packages/lf20_TkwjwX.json";
+                    if(iconType === 'delete') lottieUrl = "https://assets9.lottiefiles.com/packages/lf20_myejioos.json";
+                    if(iconType === 'announce') lottieUrl = "https://assets8.lottiefiles.com/packages/lf20_i9mxcD.json";
+
+                    Swal.fire({
+                        title: `<h4 class="fw-bold text-white mb-0">${title}</h4>`,
+                        html: `
+                            <div class="text-center p-2">
+                                <lottie-player src="${lottieUrl}" 
+                                    background="transparent" speed="1" style="width: 150px; height: 150px; margin: 0 auto;" loop autoplay>
+                                </lottie-player>
+                                <p class="mt-3 text-secondary lead small">${message}</p>
+                            </div>
+                        `,
+                        showCancelButton: true,
+                        confirmButtonText: confirmBtnText,
+                        cancelButtonText: 'Cancel',
+                        background: 'rgba(15, 15, 20, 0.98)',
+                        color: '#fff',
+                        backdrop: `rgba(0,0,0,0.6) blur(8px)`,
+                        customClass: {
+                            popup: 'glass-panel border-0 shadow-lg',
+                            confirmButton: 'btn btn-primary px-4 mx-2',
+                            cancelButton: 'btn btn-outline-light px-4 mx-2'
+                        },
+                        buttonsStyling: false
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            if (target.tagName === 'A') {
+                                loader.classList.add('active');
+                                window.location.href = target.href;
+                            } else if (target.type === 'submit' && target.form) {
+                                loader.classList.add('active');
+                                target.form.submit();
+                            } else if (target.onclick) {
+                                // If there's an onclick, we might need a different handling, 
+                                // but for now, we assume simple navigation or submission.
+                                target.onclick(); 
+                            }
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+
+    <!-- Notification Modal -->
+    <div class="modal fade" id="notificationModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content glass-ui">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-bell me-2 text-primary"></i>System
+                        Notifications</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <ul class="list-group list-group-flush" id="notification-list"
+                        style="max-height: 400px; overflow-y: auto;">
+                        <li class="list-group-item text-center py-4 bg-transparent">
+                            <div class="spinner-border text-primary spinner-border-sm" role="status"></div>
+                            <span class="ms-2">Loading notifications...</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% block scripts %}{% endblock %}
+
+    <script>
+        // Initialize DataTables for pagination globally for elements with .data-table
+        $(document).ready(function () {
+            if ($('.data-table').length > 0) {
+                $('.data-table').DataTable({
+                    "pageLength": 5,
+                    "lengthMenu": [[5, 10, 25, 50, -1], [5, 10, 25, 50, "All"]],
+                    "language": {
+                        "search": "_INPUT_",
+                        "searchPlaceholder": "Search records..."
+                    },
+                    // Dom layout for bootstrap
+                    "dom": '<"row mb-3"<"col-md-6"l><"col-md-6"f>>rt<"row mt-3"<"col-md-6"i><"col-md-6"p>>'
+                });
+            }
+        });
+    </script>
+</body>
+
+</html>

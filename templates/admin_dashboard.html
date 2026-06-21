@@ -1,0 +1,590 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+{% block body_class %}admin-dashboard-bg{% endblock %}
+
+{% block content %}
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h2 class="text-primary"><i class="fas fa-user-shield me-2"></i>Admin Dashboard</h2>
+        <div class="d-flex align-items-center justify-content-between">
+            <p class="text-muted mb-0">Welcome, <strong>{{ session.get('name', 'Admin') }}</strong>. You have full
+                system control.</p>
+            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                <i class="fas fa-key me-1"></i>Change Password
+            </button>
+        </div>
+    </div>
+</div>
+
+{% if pending_ods > 0 %}
+<div class="alert alert-warning d-flex align-items-center mb-4 fade show glass-panel text-warning border-warning"
+    role="alert">
+    <i class="fas fa-exclamation-triangle me-2 fa-lg"></i>
+    <div>
+        Attention: There are <strong>{{ pending_ods }}</strong> pending Duty Leave requests awaiting faculty approval.
+    </div>
+</div>
+{% endif %}
+
+<!-- System Statistics at Top -->
+<div class="row g-4 mb-5">
+    <div class="col-md-4">
+        <div class="card glass-panel border-0 shadow-sm h-100 text-white transition-hover">
+            <div class="card-body d-flex align-items-center">
+                <div class="rounded-circle bg-white bg-opacity-25 p-3 me-3 text-info">
+                    <i class="fas fa-calendar-alt fa-2x"></i>
+                </div>
+                <div>
+                    <h6 class="text-uppercase mb-1 small opacity-75">Total Events</h6>
+                    <h3 class="fw-bold mb-0 text-white">{{ total_events }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card glass-panel border-0 shadow-sm h-100 text-white transition-hover">
+            <div class="card-body d-flex align-items-center">
+                <div class="rounded-circle bg-white bg-opacity-25 p-3 me-3 text-warning">
+                    <i class="fas fa-clipboard-list fa-2x"></i>
+                </div>
+                <div>
+                    <h6 class="text-uppercase mb-1 small opacity-75">Registrations</h6>
+                    <h3 class="fw-bold mb-0 text-white">{{ total_registrations }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card glass-panel border-0 shadow-sm h-100 text-white transition-hover">
+            <div class="card-body d-flex align-items-center">
+                <div class="rounded-circle bg-white bg-opacity-25 p-3 me-3 text-info">
+                    <i class="fas fa-user-check fa-2x"></i>
+                </div>
+                <div>
+                    <h6 class="text-uppercase mb-1 small opacity-75">Today's Att.</h6>
+                    <h3 class="fw-bold mb-0 text-white">{{ today_attendance_count }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <!-- Left Sidebar for Navigation -->
+    <div class="col-md-3 mb-4">
+        <div class="card glass-panel border-0 shadow-sm sticky-top" style="top: 20px;">
+            <div class="card-body p-3">
+                <h5 class="fw-bold text-primary mb-4 ps-2 border-bottom pb-2">Control Panel</h5>
+                <div class="nav flex-column nav-pills gap-2" id="v-pills-tab" role="tablist"
+                    aria-orientation="vertical">
+                    <button class="nav-link text-start active fw-bold text-white transition-hover bg-transparent"
+                        id="v-pills-overview-tab" data-bs-toggle="pill" data-bs-target="#v-pills-overview" type="button"
+                        role="tab" aria-selected="true">
+                        <i class="fas fa-chart-pie me-2"></i> Overview
+                    </button>
+                    <button class="nav-link text-start fw-bold text-white transition-hover bg-transparent"
+                        id="v-pills-events-tab" data-bs-toggle="pill" data-bs-target="#v-pills-events" type="button"
+                        role="tab" aria-selected="false">
+                        <i class="fas fa-calendar-alt me-2"></i> Event Operations
+                    </button>
+                    <button class="nav-link text-start fw-bold text-white transition-hover bg-transparent"
+                        id="v-pills-academics-tab" data-bs-toggle="pill" data-bs-target="#v-pills-academics"
+                        type="button" role="tab" aria-selected="false">
+                        <i class="fas fa-graduation-cap me-2"></i> Academic Baseline
+                    </button>
+                    <button class="nav-link text-start fw-bold text-white transition-hover bg-transparent"
+                        id="v-pills-system-tab" data-bs-toggle="pill" data-bs-target="#v-pills-system" type="button"
+                        role="tab" aria-selected="false">
+                        <i class="fas fa-users-cog me-2"></i> System Admin
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="col-md-9">
+        <div class="tab-content" id="v-pills-tabContent">
+
+            <!-- OVERVIEW TAB -->
+            <div class="tab-pane fade show active" id="v-pills-overview" role="tabpanel">
+                <div class="card glass-panel border-0 p-4 shadow-sm mb-4">
+                    <h4 class="mb-4 text-primary"><i class="fas fa-chart-bar me-2"></i>Event Performance Analytics</h4>
+                    <div style="height: 400px; position: relative;">
+                        <canvas id="eventChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- EVENTS TAB -->
+            <div class="tab-pane fade" id="v-pills-events" role="tabpanel">
+                <div class="card glass-panel border-0 p-4 shadow-sm mb-4">
+                    <h4 class="mb-4 text-primary"><i class="fas fa-calendar-alt me-2"></i>Event Operations</h4>
+                    <div class="row g-4">
+                        <!-- Create Event -->
+                        <div class="col-6 col-md-4">
+                            <a href="#" data-bs-toggle="offcanvas" data-bs-target="#createEventOffcanvas"
+                                class="text-decoration-none">
+                                <div class="card shadow-sm h-100 border-0 bg-success text-white hover-scale">
+                                    <div
+                                        class="card-body text-center d-flex flex-column align-items-center justify-content-center p-4">
+                                        <i class="fas fa-calendar-plus fa-3x mb-3"></i>
+                                        <h5 class="fw-bold mb-0">Create Event</h5>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        <!-- View Events -->
+                        <div class="col-6 col-md-4">
+                            <a href="{{ url_for('public.events') }}" class="text-decoration-none load-page">
+                                <div class="card shadow-sm h-100 border-0 bg-light text-primary hover-scale">
+                                    <div
+                                        class="card-body text-center d-flex flex-column align-items-center justify-content-center p-4">
+                                        <i class="fas fa-calendar-check fa-3x mb-3"></i>
+                                        <h5 class="fw-bold mb-0">Manage Events</h5>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        <!-- Duty Leave Requests -->
+                        <div class="col-6 col-md-4">
+                            <a href="{{ url_for('admin.admin_onduty') }}" class="text-decoration-none load-page">
+                                <div class="card shadow-sm h-100 border-0 bg-warning text-dark hover-scale">
+                                    <div
+                                        class="card-body text-center d-flex flex-column align-items-center justify-content-center p-4">
+                                        <i class="fas fa-clipboard-check fa-3x mb-3"></i>
+                                        <h5 class="fw-bold mb-0">Duty Leave</h5>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        <!-- Event Attendance -->
+                        <div class="col-6 col-md-4">
+                            <a href="{{ url_for('admin.event_attendance_list') }}" class="text-decoration-none load-page">
+                                <div class="card shadow-sm h-100 border-0 bg-warning text-dark hover-scale">
+                                    <div
+                                        class="card-body text-center d-flex flex-column align-items-center justify-content-center p-4">
+                                        <i class="fas fa-calendar-check fa-3x mb-3"></i>
+                                        <h5 class="fw-bold mb-0">Attendance</h5>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        <!-- Approve Certificates -->
+                        <div class="col-6 col-md-4">
+                            <a href="{{ url_for('admin.admin_certificates') }}" class="text-decoration-none load-page">
+                                <div class="card shadow-sm h-100 border-0 bg-info text-white hover-scale">
+                                    <div
+                                        class="card-body text-center d-flex flex-column align-items-center justify-content-center p-4">
+                                        <i class="fas fa-certificate fa-3x mb-3"></i>
+                                        <h5 class="fw-bold mb-0">Certificates</h5>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        <!-- Feedbacks -->
+                        <div class="col-6 col-md-4">
+                            <a href="{{ url_for('admin.admin_feedbacks') }}" class="text-decoration-none load-page">
+                                <div class="card shadow-sm h-100 border-0 bg-secondary text-white hover-scale">
+                                    <div
+                                        class="card-body text-center d-flex flex-column align-items-center justify-content-center p-4">
+                                        <i class="fas fa-comments fa-3x mb-3"></i>
+                                        <h5 class="fw-bold mb-0">Feedbacks</h5>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ACADEMICS TAB -->
+            <div class="tab-pane fade" id="v-pills-academics" role="tabpanel">
+                <div class="card glass-panel border-0 p-4 shadow-sm mb-4">
+                    <h4 class="mb-4 text-primary"><i class="fas fa-graduation-cap me-2"></i>Academic Baseline</h4>
+                    <div class="row g-4">
+                        <!-- Manage Courses -->
+                        <div class="col-6 col-md-4">
+                            <a href="{{ url_for('admin.manage_courses') }}" class="text-decoration-none load-page">
+                                <div class="card shadow-sm h-100 border-0 bg-info text-white hover-scale">
+                                    <div
+                                        class="card-body text-center d-flex flex-column align-items-center justify-content-center p-4">
+                                        <i class="fas fa-book fa-3x mb-3"></i>
+                                        <h5 class="fw-bold mb-0">Courses</h5>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        <!-- Manage Timetable -->
+                        <div class="col-6 col-md-4">
+                            <a href="{{ url_for('admin.manage_timetable') }}" class="text-decoration-none load-page">
+                                <div class="card shadow-sm h-100 border-0 bg-primary text-white hover-scale">
+                                    <div
+                                        class="card-body text-center d-flex flex-column align-items-center justify-content-center p-4">
+                                        <i class="fas fa-clock fa-3x mb-3"></i>
+                                        <h5 class="fw-bold mb-0">Timetable</h5>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SYSTEM TAB -->
+            <div class="tab-pane fade" id="v-pills-system" role="tabpanel">
+                <div class="card glass-panel border-0 p-4 shadow-sm mb-4">
+                    <h4 class="mb-4 text-primary"><i class="fas fa-users-cog me-2"></i>System Administration</h4>
+                    <div class="row g-4">
+                        <!-- Register Faculty -->
+                        <div class="col-6 col-md-4">
+                            <a href="#" data-bs-toggle="offcanvas" data-bs-target="#registerFacultyOffcanvas"
+                                class="text-decoration-none">
+                                <div class="card shadow-sm h-100 border-0 bg-primary text-white hover-scale">
+                                    <div
+                                        class="card-body text-center d-flex flex-column align-items-center justify-content-center p-4">
+                                        <i class="fas fa-user-plus fa-3x mb-3"></i>
+                                        <h5 class="fw-bold mb-0">Add Faculty</h5>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        <!-- Manage Users -->
+                        <div class="col-6 col-md-4">
+                            <a href="{{ url_for('admin.manage_users') }}" class="text-decoration-none load-page">
+                                <div class="card shadow-sm h-100 border-0 bg-dark text-white hover-scale">
+                                    <div
+                                        class="card-body text-center d-flex flex-column align-items-center justify-content-center p-4">
+                                        <i class="fas fa-users fa-3x mb-3"></i>
+                                        <h5 class="fw-bold mb-0">Users</h5>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        <!-- System Settings -->
+                        <div class="col-6 col-md-4">
+                            <a href="{{ url_for('admin.system_settings') }}" class="text-decoration-none load-page">
+                                <div class="card shadow-sm h-100 border-0 bg-light text-dark hover-scale">
+                                    <div
+                                        class="card-body text-center d-flex flex-column align-items-center justify-content-center p-4">
+                                        <i class="fas fa-sliders-h fa-3x mb-3"></i>
+                                        <h5 class="fw-bold mb-0">Settings</h5>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div> <!-- /.tab-content -->
+    </div> <!-- /.col-md-9 -->
+</div> <!-- /.row -->
+
+<!-- Create Event Offcanvas (Bottom) -->
+<div class="offcanvas offcanvas-bottom h-100 glass-ui offcanvas-slow" tabindex="-1" id="createEventOffcanvas"
+    aria-labelledby="createEventOffcanvasLabel">
+    <div class="offcanvas-header border-bottom-0">
+        <h5 class="offcanvas-title fw-bold" id="createEventOffcanvasLabel"><i
+                class="fas fa-calendar-plus me-2 text-success"></i>Create New Event</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <form method="POST" action="{{ url_for('admin.create_event') }}">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Event Name</label>
+                                <input type="text" name="event_name" class="form-control" placeholder="Enter event name"
+                                    required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Duration</label>
+                                <select name="duration" id="eventDuration" class="form-select" required
+                                    onchange="toggleEndDate()">
+                                    <option value="1 Day" selected>1 Day</option>
+                                    <option value="2 Days">2 Days</option>
+                                    <option value="3 Days">3 Days</option>
+                                    <option value="1 Week">1 Week</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" id="dateLabelStart">Event Date</label>
+                                <input type="date" name="event_date" class="form-control" required>
+                            </div>
+                            <div class="col-md-6 mb-3 d-none" id="endDateContainer">
+                                <label class="form-label">Event Date (To)</label>
+                                <input type="date" name="event_end_date" id="eventEndDate" class="form-control">
+                            </div>
+                            <div class="col-md-6 mb-3" id="maxSeatsContainer">
+                                <label class="form-label">Max Seats</label>
+                                <input type="number" name="max_seats" class="form-control" min="1" value="30" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label"><i class="fas fa-clock me-1 text-primary"></i>Start Time</label>
+                                <div class="input-group">
+                                    <input type="time" name="start_time" id="add_event_start_time" class="form-control"
+                                        value="10:00" onchange="updateAmPm('add_event_start_time', 'add_event_start_ampm')" required>
+                                    <span class="input-group-text fw-bold bg-primary text-white" id="add_event_start_ampm"
+                                        style="min-width:54px;">AM</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label"><i class="fas fa-history me-1 text-danger"></i>End Time</label>
+                                <div class="input-group">
+                                    <input type="time" name="end_time" id="add_event_end_time" class="form-control"
+                                        value="13:00" onchange="updateAmPm('add_event_end_time', 'add_event_end_ampm')" required>
+                                    <span class="input-group-text fw-bold bg-danger text-white" id="add_event_end_ampm"
+                                        style="min-width:54px;">PM</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Location</label>
+                                <input type="text" name="location" class="form-control" placeholder="Enter venue"
+                                    required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Coordinator</label>
+                                <select name="coordinator_id" class="form-select" required>
+                                    <option value="" selected disabled>Select Faculty</option>
+                                    {% if faculty_list %}
+                                    {% for faculty in faculty_list %}
+                                    <option value="{{ faculty.faculty_id }}">{{ faculty.name }} ({{ faculty.department
+                                        }})</option>
+                                    {% endfor %}
+                                    {% endif %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Event Type</label>
+                                <select name="event_type" class="form-select" required>
+                                    <option value="General" selected>General</option>
+                                    <option value="Technical Seminar">Technical Seminar</option>
+                                    <option value="Workshop">Workshop</option>
+                                    <option value="Hackathon">Hackathon</option>
+                                    <option value="Cultural">Cultural</option>
+                                    <option value="Sports">Sports</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Activity Points</label>
+                                <input type="number" name="points_awarded" class="form-control" min="0" value="10"
+                                    required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label text-warning"><i class="fas fa-filter me-1"></i>Target Department</label>
+                                <select name="department" class="form-select border-warning" required>
+                                    <option value="All" selected>All Departments (General / Open)</option>
+                                    <option value="CSE">Computer Science (CSE)</option>
+                                    <option value="IT">Information Technology (IT)</option>
+                                    <option value="ECE">Electronics (ECE)</option>
+                                    <option value="EEE">Electrical (EEE)</option>
+                                    <option value="MECH">Mechanical (MECH)</option>
+                                    <option value="CIVIL">Civil (CIVIL)</option>
+                                </select>
+                                <small class="text-white-50">Only students from the selected department will see this event. Choose "All" for campus-wide events.</small>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea name="description" class="form-control" rows="3"
+                                placeholder="Enter description"></textarea>
+                        </div>
+                        <!-- Face Recognition Option Removed -->
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success btn-lg">Create Event</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Register Faculty Offcanvas (Bottom) -->
+<div class="offcanvas offcanvas-bottom h-100 glass-ui offcanvas-slow" tabindex="-1" id="registerFacultyOffcanvas"
+    aria-labelledby="registerFacultyOffcanvasLabel">
+    <div class="offcanvas-header border-bottom-0">
+        <h5 class="offcanvas-title fw-bold" id="registerFacultyOffcanvasLabel"><i
+                class="fas fa-user-plus me-2 text-info"></i>Register New Faculty</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <form method="POST" action="{{ url_for('admin.register_faculty') }}">
+                        <div class="mb-3">
+                            <label class="form-label">Full Name</label>
+                            <input type="text" name="name" class="form-control" placeholder="Enter full name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email Address</label>
+                            <input type="email" name="email" class="form-control" placeholder="Enter email address"
+                                required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Department</label>
+                            <input type="text" name="department" class="form-control"
+                                placeholder="E.g. Computer Science" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            <input type="password" name="password" class="form-control"
+                                placeholder="Assign temporary password" required>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-info btn-lg text-white">Register Faculty</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</div>
+
+<!-- Change Password Modal -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-ui bg-dark text-white"> <!-- Dark theme for admin -->
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold"><i class="fas fa-key me-2 text-warning"></i>Change Password</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="{{ url_for('auth.change_password') }}">
+                    <div class="mb-3">
+                        <label class="form-label text-white-50 small fw-bold">Current Password</label>
+                        <input type="password" name="current_password" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-white-50 small fw-bold">New Password</label>
+                        <input type="password" name="new_password" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-white-50 small fw-bold">Confirm New Password</label>
+                        <input type="password" name="confirm_password" class="form-control" required>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-warning fw-bold">Update Password</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var rawData = JSON.parse('{{ analytics_data | tojson }}');
+
+        if (rawData && rawData.length > 0) {
+            var labels = rawData.map(function (item) { return item.event_name; });
+            var registrations = rawData.map(function (item) { return item.total_reg; });
+            var attendance = rawData.map(function (item) { return item.attended || 0; });
+
+            var ctx = document.getElementById('eventChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Registrations',
+                            data: registrations,
+                            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Attendance',
+                            data: attendance,
+                            backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+        } else {
+            var container = document.getElementById('eventChart');
+            if (container) {
+                container.parentElement.innerHTML = '<div class="text-center py-5 text-muted">No event data available yet for analytics.</div>';
+            }
+        }
+    });
+
+    function toggleEndDate() {
+        const durationSelect = document.getElementById('eventDuration');
+        const endDateContainer = document.getElementById('endDateContainer');
+        const eventEndDateInput = document.getElementById('eventEndDate');
+        const dateLabelStart = document.getElementById('dateLabelStart');
+        const maxSeatsContainer = document.getElementById('maxSeatsContainer');
+
+        if (durationSelect.value === '1 Day') {
+            endDateContainer.classList.add('d-none');
+            eventEndDateInput.removeAttribute('required');
+            dateLabelStart.textContent = 'Event Date';
+        } else {
+            endDateContainer.classList.remove('d-none');
+            eventEndDateInput.setAttribute('required', 'required');
+            dateLabelStart.textContent = 'Event Date (From)';
+        }
+    }
+
+    function updateAmPm(inputId, badgeId) {
+        const val = document.getElementById(inputId)?.value;
+        const badge = document.getElementById(badgeId);
+        if (!badge) return;
+        if (!val) { badge.textContent = '--'; badge.className = 'input-group-text fw-bold'; return; }
+        const h = parseInt(val.split(':')[0], 10);
+        const isAM = h < 12;
+        badge.textContent = isAM ? 'AM' : 'PM';
+        badge.className = 'input-group-text fw-bold ' + (isAM ? 'bg-primary text-white' : 'bg-danger text-white');
+    }
+
+    // Initialize badges on load
+    document.addEventListener('DOMContentLoaded', () => {
+        updateAmPm('add_event_start_time', 'add_event_start_ampm');
+        updateAmPm('add_event_end_time', 'add_event_end_ampm');
+    });
+</script>
+{% endblock %}

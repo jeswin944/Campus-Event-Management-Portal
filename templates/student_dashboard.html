@@ -1,0 +1,1329 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Dashboard{% endblock %}
+{% block body_class %}student-dashboard-bg{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-bold mb-0" style="color: var(--text-primary);"><i class="fas fa-graduation-cap me-2 text-accent"></i>Student Dashboard</h3>
+        <div class="d-flex align-items-center gap-3">
+            <div style="color: var(--text-primary); opacity: 0.9;">
+                Welcome, <strong class="text-accent">{{ session.get('name', 'Student') }}</strong>
+                {% if session.get('register_number') %}
+                <span class="badge bg-warning text-dark ms-2 shadow-sm rounded-pill"><i
+                        class="fas fa-id-badge me-1"></i>{{ session.get('register_number') }}</span>
+
+                {% if session.get('is_nie23cs') %}
+                <span class="badge fw-bold ms-2 shadow-sm rounded-pill"
+                    style="background: linear-gradient(135deg, #4361ee, #7209b7); font-size: 0.75rem;">
+                    <i class="fas fa-star me-1"></i>NIE Student
+                </span>
+                {% else %}
+                <span class="badge fw-bold ms-2 shadow-sm rounded-pill"
+                    style="background: linear-gradient(135deg, #06b6d4, #0891b2); font-size: 0.75rem;">
+                    <i class="fas fa-globe me-1"></i>Inter-Collegiate
+                </span>
+                {% endif %}
+                {% endif %}
+            </div>
+            <div class="dropdown">
+                <button class="btn btn-sm btn-outline-secondary dropdown-toggle shadow-none border-0" type="button" data-bs-toggle="dropdown" 
+                    style="color: var(--text-primary); font-size: 1.2rem;">
+                    <i class="fas fa-user-circle"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end glass-panel border-0 shadow">
+                    <li><a class="dropdown-item" href="#" data-bs-toggle="modal"
+                            data-bs-target="#changePasswordModal"><i class="fas fa-key me-2"></i>Change Password</a>
+                    </li>
+                    <li>
+                        <hr class="dropdown-divider bg-white opacity-25">
+                    </li>
+                    <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}"><i
+                                class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Section (Moved to Overview Tab) -->
+
+    <!-- Main Layout Grid with Sidebar -->
+    <div class="row mt-4 mb-5">
+        <!-- Left Sidebar for Navigation -->
+        <div class="col-md-3 mb-4">
+            <div class="card glass-panel border-0 shadow-sm sticky-top" style="top: 20px;">
+                <div class="card-body p-3">
+                    <h5 class="fw-bold text-primary mb-4 ps-2 border-bottom pb-2">Student Portal</h5>
+                    <div class="nav flex-column nav-pills gap-2" id="v-pills-tab" role="tablist"
+                        aria-orientation="vertical">
+                        <button class="nav-link text-start active fw-bold transition-hover bg-transparent"
+                            id="v-pills-overview-tab" data-bs-toggle="pill" data-bs-target="#v-pills-overview"
+                            type="button" role="tab" aria-selected="true">
+                            <i class="fas fa-home me-2"></i> Dashboard Overview
+                        </button>
+                        <button class="nav-link text-start fw-bold text-white transition-hover bg-transparent"
+                            id="v-pills-registrations-tab" data-bs-toggle="pill" data-bs-target="#v-pills-registrations"
+                            type="button" role="tab" aria-selected="false">
+                            <i class="fas fa-list-alt me-2"></i> My Registrations
+                        </button>
+
+                        <button class="nav-link text-start fw-bold text-white transition-hover bg-transparent"
+                            id="v-pills-profile-tab" data-bs-toggle="pill" data-bs-target="#v-pills-profile"
+                            type="button" role="tab" aria-selected="false">
+                            <i class="fas fa-id-card me-2"></i> My Profile
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="col-md-9">
+            <div class="tab-content" id="v-pills-tabContent">
+
+                <!-- OVERVIEW TAB -->
+                <div class="tab-pane fade show active" id="v-pills-overview" role="tabpanel">
+
+                    <!-- Stats Section (Moved from top) -->
+                    <div class="row mb-4 g-3">
+                        <div class="col-md-3">
+                            <div
+                                class="card glass-panel border-0 shadow-sm h-100 text-white hover-scale transition-hover">
+                                <div class="card-body p-3 p-xl-4 d-flex align-items-center">
+                                    <div class="rounded-circle bg-white bg-opacity-25 p-2 p-xl-3 me-2 me-xl-3">
+                                        <i class="fas fa-clipboard-list fa-lg"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="text-uppercase mb-1 small opacity-75" style="font-size: 0.75rem;">
+                                            Registered</h6>
+                                        <h4 class="fw-bold mb-0">{{ total_registered }}</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div
+                                class="card glass-panel border-0 shadow-sm h-100 text-white hover-scale transition-hover">
+                                <div class="card-body p-3 p-xl-4 d-flex align-items-center">
+                                    <div class="rounded-circle bg-white bg-opacity-25 p-2 p-xl-3 me-2 me-xl-3">
+                                        <i class="fas fa-check-circle fa-lg"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="text-uppercase mb-1 small opacity-75" style="font-size: 0.75rem;">
+                                            Attended</h6>
+                                        <h4 class="fw-bold mb-0">{{ attended_count }}</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div
+                                class="card glass-panel border-0 shadow-sm h-100 text-white hover-scale transition-hover">
+                                <div class="card-body p-3 p-xl-4 d-flex align-items-center">
+                                    <div class="rounded-circle bg-white bg-opacity-25 p-2 p-xl-3 me-2 me-xl-3">
+                                        <i class="fas fa-percentage fa-lg"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="text-uppercase mb-1 small opacity-75" style="font-size: 0.75rem;">
+                                            Participation</h6>
+                                        <h4 class="fw-bold mb-0">{{ participation_rate }}%</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card glass-panel border-0 shadow-sm h-100 text-white hover-scale transition-hover"
+                                style="background: linear-gradient(135deg, rgba(255,215,0,0.1) 0%, rgba(255,140,0,0.2) 100%); cursor: pointer;"
+                                data-bs-toggle="modal" data-bs-target="#transcriptModal">
+                                <div class="card-body p-3 p-xl-4 d-flex align-items-center">
+                                    <div class="rounded-circle bg-warning text-dark p-2 p-xl-3 me-2 me-xl-3 shadow-sm">
+                                        <i class="fas fa-award fa-lg"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="text-uppercase mb-1 small text-warning fw-bold"
+                                            style="font-size: 0.75rem;">Activity Points: {{ total_campus_points|default(0) }}
+                                        </h6>
+                                        <h5 class="fw-bold mb-0 text-white text-truncate" style="max-width: 100px;"
+                                            title="{{ badge }}">{{ badge }}</h5>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+
+                    <!-- Quick Actions Row -->
+                    <div class="row mb-4 g-3">
+                        <div class="col-md-6">
+                            <button
+                                class="card glass-panel border-0 shadow-md h-100 text-white w-100 text-start hover-scale transition-hover bg-transparent"
+                                data-bs-toggle="offcanvas" data-bs-target="#registerEventOffcanvas"
+                                onclick="this.classList.add('animate__animated', 'animate__zoomIn', 'animate__slow'); setTimeout(() => { this.classList.remove('animate__animated', 'animate__zoomIn', 'animate__slow'); }, 2000);">
+                                <div class="card-body p-4 d-flex align-items-center">
+                                    <div
+                                        class="rounded-circle bg-success bg-opacity-25 p-3 me-4 text-success shadow-sm">
+                                        <i class="fas fa-calendar-plus fa-2x"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="fw-bold mb-1">Browse Events</h5>
+                                        <small class="opacity-75">Discover and register for new events</small>
+                                    </div>
+                                    <div class="ms-auto text-success opacity-50">
+                                        <i class="fas fa-chevron-right fa-lg"></i>
+                                    </div>
+                                </div>
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <button
+                                class="card glass-panel border-0 shadow-md h-100 text-white w-100 text-start hover-scale transition-hover bg-transparent"
+                                data-bs-toggle="modal" data-bs-target="#historyModal"
+                                onclick="this.classList.add('animate__animated', 'animate__fadeIn'); setTimeout(() => { this.classList.remove('animate__animated', 'animate__fadeIn'); }, 1000);">
+                                <div class="card-body p-4 d-flex align-items-center">
+                                    <div class="rounded-circle bg-info bg-opacity-25 p-3 me-4 text-info shadow-sm">
+                                        <i class="fas fa-history fa-2x"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="fw-bold mb-1">Event History</h5>
+                                        <small class="opacity-75">View past events and attendance</small>
+                                    </div>
+                                    <div class="ms-auto text-info opacity-50">
+                                        <i class="fas fa-chevron-right fa-lg"></i>
+                                    </div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Calendar Section -->
+                    <div class="card glass-panel border-0 shadow-lg mb-4">
+                        <div class="card-body p-4">
+                            <h4 class="fw-bold text-white mb-4"><i
+                                    class="fas fa-calendar-alt me-2 text-warning"></i>Event Schedule</h4>
+                            <div id="calendar" class="w-100 mx-auto" style="max-width: 800px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- REGISTRATIONS TAB -->
+                <div class="tab-pane fade" id="v-pills-registrations" role="tabpanel">
+                    <div class="card glass-panel border-0 shadow-lg mb-4">
+                        <div
+                            class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center pt-4 px-4 pb-2">
+                            <h4 class="fw-bold text-white mb-0"><i class="fas fa-list-alt me-2 text-info"></i>My
+                                Registrations</h4>
+                        </div>
+                        <div class="card-body p-4 pt-2">
+                            {% if registrations or waitlisted_events %}
+                            <!-- Registration Tabs -->
+                            <ul class="nav nav-pills mb-4 gap-2" id="regTabs" role="tablist">
+                                <li class="nav-item">
+                                    <button class="nav-link active btn-sm glass-pill px-4 fw-bold text-white border-0 shadow-sm" id="upcoming-tab" data-bs-toggle="pill" data-bs-target="#upcoming-reg" type="button" role="tab">Upcoming</button>
+                                </li>
+                                <li class="nav-item">
+                                    <button class="nav-link btn-sm glass-pill px-4 fw-bold text-white border-0 shadow-sm" id="completed-tab" data-bs-toggle="pill" data-bs-target="#completed-reg" type="button" role="tab">Completed</button>
+                                </li>
+                                <li class="nav-item">
+                                    <button class="nav-link btn-sm glass-pill px-4 fw-bold text-white border-0 shadow-sm" id="waitlist-tab" data-bs-toggle="pill" data-bs-target="#waitlist-reg" type="button" role="tab">Waitlisted <span class="badge bg-warning text-dark ms-1">{{ waitlisted_events|length }}</span></button>
+                                </li>
+                            </ul>
+
+                            <div class="tab-content" id="regTabsContent">
+                                <!-- UPCOMING -->
+                                <div class="tab-pane fade show active" id="upcoming-reg" role="tabpanel">
+                                    <div class="row g-3">
+                                        {% set count = namespace(value=0) %}
+                                        {% for r in registrations if r.attendance != 'Present' %}
+                                        {% set count.value = count.value + 1 %}
+                                        <div class="col-md-6">
+                                            <div class="card glass-ui border-0 shadow-sm hover-scale h-100">
+                                                <div class="card-body p-4">
+                                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                                        <div>
+                                                            <h5 class="fw-bold text-white mb-1">{{ r.event_name }}</h5>
+                                                            <span class="badge bg-warning text-dark small"><i class="fas fa-clock me-1"></i>Upcoming / Pending</span>
+                                                        </div>
+                                                        <div class="dropdown">
+                                                            <button class="btn btn-sm btn-outline-light border-0 opacity-50" type="button" data-bs-toggle="dropdown">
+                                                                <i class="fas fa-ellipsis-v"></i>
+                                                            </button>
+                                                            <ul class="dropdown-menu dropdown-menu-end glass-panel border-0 shadow">
+                                                                {% if r.can_cancel %}
+                                                                <li><a class="dropdown-item text-danger cancel-reg-btn" href="#" data-href="{{ url_for('student.cancel_registration', reg_id=r.registration_id) }}" data-event-name="{{ r.event_name }}"><i class="fas fa-trash-alt me-2"></i>Cancel Registration</a></li>
+                                                                {% endif %}
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                    <div class="text-white-50 small mb-4">
+                                                        <div class="mb-2"><i class="far fa-calendar-alt me-2 text-primary"></i>{{ r.event_date }}</div>
+                                                        <div><i class="fas fa-map-marker-alt me-2 text-primary"></i>{{ r.location }}</div>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between align-items-center mt-auto pt-3 border-top border-white border-opacity-10">
+                                                        <span class="small opacity-50 italic">Mark attendance to unlock options</span>
+                                                        {% if session.get('is_nie23cs') %}
+                                                        <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" disabled title="Mark Attendance to Unlock DL">
+                                                            <i class="fas fa-lock me-1 small"></i> DL
+                                                        </button>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                        {% if count.value == 0 %}
+                                        <div class="col-12 text-center py-4 text-white-50 opacity-75">
+                                            <i class="fas fa-calendar-check fa-3x mb-3"></i>
+                                            <p>No upcoming events. Time to browse some!</p>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!-- COMPLETED -->
+                                <div class="tab-pane fade" id="completed-reg" role="tabpanel">
+                                    <div class="row g-3">
+                                        {% set count = namespace(value=0) %}
+                                        {% for r in registrations if r.attendance == 'Present' %}
+                                        {% set count.value = count.value + 1 %}
+                                        <div class="col-md-6">
+                                            <div class="card glass-ui border-0 shadow-sm hover-scale h-100 border-start border-4 border-success">
+                                                <div class="card-body p-4">
+                                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                                        <div>
+                                                            <h5 class="fw-bold text-white mb-1">{{ r.event_name }}</h5>
+                                                            <span class="badge bg-success-soft text-success small border border-success border-opacity-25 bg-success bg-opacity-10"><i class="fas fa-check-circle me-1"></i>Attended</span>
+                                                        </div>
+                                                        <div class="d-flex gap-2">
+                                                            {% if r.certificate_status == 'Approved' %}
+                                                            <a href="{{ url_for('student.download_certificate', reg_id=r.registration_id) }}" class="btn btn-sm btn-success rounded-circle shadow-sm" title="Download Certificate">
+                                                                <i class="fas fa-download"></i>
+                                                            </a>
+                                                            {% elif r.certificate_status == 'Pending' %}
+                                                            <div class="status-circle bg-info-soft text-info" title="Certificate Processing">
+                                                                <i class="fas fa-cog fa-spin"></i>
+                                                            </div>
+                                                            {% endif %}
+
+                                                            {% if r.feedback_count > 0 %}
+                                                            <button class="btn btn-sm btn-secondary rounded-circle shadow-sm" disabled title="Already Rated">
+                                                                <i class="fas fa-check"></i>
+                                                            </button>
+                                                            {% else %}
+                                                            <button class="btn btn-sm btn-warning text-dark rounded-circle shadow-sm" data-bs-toggle="modal" data-bs-target="#feedbackModal" data-event-id="{{ r.event_id }}" data-event-name="{{ r.event_name }}" title="Rate Event">
+                                                                <i class="fas fa-star"></i>
+                                                            </button>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                    <div class="text-white-50 small mb-4">
+                                                        <div class="mb-2"><i class="far fa-calendar-alt me-2 text-primary"></i>{{ r.event_date }}</div>
+                                                        <div><i class="fas fa-map-marker-alt me-2 text-primary"></i>{{ r.location }}</div>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between align-items-center mt-auto pt-3 border-top border-white border-opacity-10">
+                                                        <div class="activity-points-badge small text-warning fw-bold">
+                                                            <i class="fas fa-plus-circle me-1"></i>Activity Points Earned
+                                                        </div>
+                                                        {% if session.get('is_nie23cs') %}
+                                                        {% if r.od_status == 'Approved' %}
+                                                        <span class="badge bg-success rounded-pill px-3 py-2 shadow-sm" title="Duty Leave Approved"><i class="fas fa-check-double me-1 small"></i>DL: Approved</span>
+                                                        {% elif r.od_status == 'Rejected' %}
+                                                        <span class="badge bg-danger rounded-pill px-3 py-2 shadow-sm" title="Duty Leave Rejected"><i class="fas fa-times-circle me-1 small"></i>DL: Rejected</span>
+                                                        {% elif r.od_status == 'Pending' %}
+                                                        <span class="badge bg-warning text-dark rounded-pill px-3 py-2 shadow-sm" title="Duty Leave Pending"><i class="fas fa-clock me-1 small"></i>DL: Pending</span>
+                                                        {% else %}
+                                                        <a href="{{ url_for('student.request_onduty', reg_id=r.registration_id) }}" class="btn btn-sm btn-info text-white rounded-pill px-3 shadow-sm transition-hover" title="Request Duty Leave">
+                                                            <i class="fas fa-file-contract me-1 small"></i> Request DL
+                                                        </a>
+                                                        {% endif %}
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                        {% if count.value == 0 %}
+                                        <div class="col-12 text-center py-4 text-white-50 opacity-75">
+                                            <i class="fas fa-info-circle fa-3x mb-3"></i>
+                                            <p>No completed events yet. Points are waiting!</p>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!-- WAITLIST -->
+                                <div class="tab-pane fade" id="waitlist-reg" role="tabpanel">
+                                    <div class="row g-3">
+                                        {% for w in waitlisted_events %}
+                                        <div class="col-md-6">
+                                            <div class="card glass-ui border-0 shadow-sm bg-warning bg-opacity-10 border-start border-4 border-warning">
+                                                <div class="card-body p-4">
+                                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                                        <div>
+                                                            <h5 class="fw-bold text-white mb-1">{{ w.event_name }}</h5>
+                                                            <span class="badge bg-warning text-dark small"><i class="fas fa-hourglass-half me-1"></i>Queue Position: #{{ w.position }}</span>
+                                                        </div>
+                                                        <button class="btn btn-sm btn-danger rounded-circle shadow-sm cancel-waitlist-btn" data-href="{{ url_for('student.cancel_waitlist', waitlist_id=w.waitlist_id) }}" data-event-name="{{ w.event_name }}" title="Cancel Waitlist">
+                                                            <i class="fas fa-times"></i>
+                                                        </button>
+                                                    </div>
+                                                    <div class="text-white-50 small mb-0">
+                                                        <div class="mb-2"><i class="far fa-calendar-alt me-2 text-warning"></i>{{ w.event_date }}</div>
+                                                        <div><i class="fas fa-map-marker-alt me-2 text-warning"></i>{{ w.location }}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                        {% if not waitlisted_events %}
+                                        <div class="col-12 text-center py-4 text-white-50 opacity-75">
+                                            <i class="fas fa-thumbs-up fa-3x mb-3"></i>
+                                            <p>You're not on any waitlists. High priority!</p>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-5 text-muted">
+                                <i class="fas fa-calendar-times fa-3x mb-3 opacity-50"></i>
+                                <p>No active registrations found.</p>
+                                <button class="btn btn-primary mt-2 shadow-sm rounded-pill px-4" type="button" data-bs-toggle="offcanvas" data-bs-target="#registerEventOffcanvas">
+                                    <i class="fas fa-search me-2"></i>Browse Events
+                                </button>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- FACE RECOGNITION TAB REMOVED -->
+
+                <!-- PROFILE TAB -->
+                <div class="tab-pane fade" id="v-pills-profile" role="tabpanel">
+                    <div class="card glass-panel border-0 shadow-lg mb-4">
+                        <div class="card-header bg-transparent border-0 pt-4 px-4 pb-2">
+                            <h4 class="fw-bold text-white mb-0">
+                                <i class="fas fa-id-card me-2 text-info"></i>My Profile
+                            </h4>
+                            <p class="text-white-50 small mb-0">Keep your details up to date for events and attendance.
+                            </p>
+                        </div>
+                        <div class="card-body p-4">
+                            <form method="POST" action="{{ url_for('student.update_profile') }}"
+                                enctype="multipart/form-data">
+                                <!-- Photo Upload -->
+                                <div class="text-center mb-4">
+                                    <div class="position-relative d-inline-block">
+                                        {% if student_profile and student_profile.profile_photo %}
+                                        <img src="/static/uploads/portraits/{{ student_profile.profile_photo }}"
+                                            class="rounded-circle shadow" id="previewAvatar"
+                                            style="width:110px;height:110px;object-fit:cover;border:3px solid rgba(108,99,255,0.6);">
+                                        {% else %}
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white shadow"
+                                            id="previewAvatar"
+                                            style="width:110px;height:110px;font-size:2.5rem;background:linear-gradient(135deg,#4361ee,#7209b7);border:3px solid rgba(108,99,255,0.6);">
+                                            {{ session.get('name','?')[0].upper() }}
+                                        </div>
+                                        {% endif %}
+                                        <label for="photoInput"
+                                            class="position-absolute bottom-0 end-0 btn btn-sm btn-primary rounded-circle shadow"
+                                            style="width:34px;height:34px;padding:0;line-height:34px;cursor:pointer;">
+                                            <i class="fas fa-camera"></i>
+                                            <input type="file" id="photoInput" name="profile_photo" accept="image/*"
+                                                class="d-none" onchange="previewPhoto(this)">
+                                        </label>
+                                    </div>
+                                    <p class="text-white-50 small mt-2">Click the camera icon to upload a photo</p>
+                                </div>
+
+                                <!-- Read-only fields -->
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label text-white-50 small fw-bold">Full Name</label>
+                                        <input type="text" class="form-control glass-input text-white"
+                                            value="{{ session.get('name','') }}" readonly>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label text-white-50 small fw-bold">Register Number</label>
+                                        <input type="text" class="form-control glass-input text-white"
+                                            value="{{ session.get('register_number','') }}" readonly>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label text-white-50 small fw-bold">Email</label>
+                                        <input type="email" class="form-control glass-input text-white"
+                                            value="{{ session.get('email','') }}" readonly>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label text-white-50 small fw-bold">Phone Number</label>
+                                        <input type="tel" name="phone" class="form-control glass-input text-white"
+                                            placeholder="Enter phone number"
+                                            value="{{ student_profile.phone if student_profile and student_profile.phone else '' }}">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label text-white-50 small fw-bold">Year</label>
+                                        <select name="year" class="form-select glass-input text-white">
+                                            <option value="">Select Year</option>
+                                            {% for y in range(1,5) %}
+                                            <option value="{{ y }}" {% if student_profile and student_profile.year==y
+                                                %}selected{% endif %}>Year {{ y }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label text-white-50 small fw-bold">Department</label>
+                                        <input type="text" name="department" class="form-control glass-input text-white"
+                                            placeholder="e.g. Computer Science"
+                                            value="{{ student_profile.department if student_profile and student_profile.department else '' }}">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label text-white-50 small fw-bold">Semester</label>
+                                        <select name="semester" class="form-select glass-input text-white">
+                                            <option value="">Select Semester</option>
+                                            {% for s in range(1,9) %}
+                                            <option value="{{ s }}" {% if student_profile and
+                                                student_profile.semester|string==s|string %}selected{% endif %}>Semester
+                                                {{
+                                                s }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="col-12 mt-3">
+                                        <label class="form-label text-white-50 small fw-bold">My Interests (Comma separated)</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text glass-input border-end-0 text-white-50"><i class="fas fa-heart"></i></span>
+                                            <input type="text" name="interests" class="form-control glass-input border-start-0 text-white" 
+                                                placeholder="e.g. AI, Music, Sports, Web Design" 
+                                                value="{{ student_profile.interests if student_profile and student_profile.interests else '' }}">
+                                        </div>
+                                        <small class="text-white-50 mt-1 d-block opacity-75">Tell us what you love! We'll use this to recommend events just for you.</small>
+                                    </div>
+                                </div>
+
+                                <div class="d-grid mt-2">
+                                    <button type="submit" class="btn btn-primary fw-bold py-2">
+                                        <i class="fas fa-save me-2"></i>Save Changes
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+            </div> <!-- /.tab-content -->
+        </div> <!-- /.col-md-9 -->
+    </div> <!-- /.row -->
+</div>
+
+<!-- FullCalendar CSS and JS -->
+<link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css' rel='stylesheet' />
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
+
+<style>
+    /* FullCalendar Customization */
+    .fc {
+        color: var(--bs-body-color);
+        --fc-border-color: rgba(0, 0, 0, 0.1);
+    }
+
+    [data-bs-theme="dark"] .fc {
+        --fc-border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .fc-event {
+        cursor: pointer;
+        padding: 4px 8px;
+        font-weight: 500;
+        background: #4361ee !important;
+        border: none !important;
+        border-radius: 6px !important;
+    }
+
+    .fc-toolbar-title {
+        font-weight: bold;
+    }
+
+    .fc-col-header-cell-cushion,
+    .fc-daygrid-day-number {
+        text-decoration: none !important;
+        color: inherit !important;
+    }
+
+    .fc-button-primary {
+        background-color: #4361ee !important;
+        border: none !important;
+    }
+
+    /* Modal Backdrop Blur */
+    .modal.fade.show {
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        background: rgba(0, 0, 0, 0.4);
+    }
+</style>
+
+<!-- Event Data for Calendar -->
+<script id="calendar-events-data" type="application/json">
+    [
+        {% for event in events %}
+        {
+            "id": "{{ event.event_id }}",
+            "title": {{ event.event_name|tojson }},
+            "start": "{{ event.event_date }}",
+            "extendedProps": {
+                "description": {{ event.description|tojson }},
+                "location": {{ event.location|tojson }},
+                "is_registered": {{ 'true' if event.is_registered else 'false' }},
+                "is_waitlisted": {{ 'true' if event.is_waitlisted else 'false' }},
+                "waitlist_pos": {{ event.waitlist_pos if event.waitlist_pos is not none else 'null' }},
+                "deadline_passed": {{ 'true' if event.deadline_passed else 'false' }},
+                "coordinator_name": {{ event.coordinator_name|tojson if event.coordinator_name else '"TBD"' }}
+            }
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ]
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var calendarEl = document.getElementById('calendar');
+        var eventsData = JSON.parse(document.getElementById('calendar-events-data').textContent);
+
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            fixedWeekCount: false,
+            contentHeight: 450,
+            events: eventsData,
+            eventClick: function (info) {
+                const event = info.event;
+                const props = event.extendedProps;
+
+                // Populate Detail Modal
+                document.getElementById('detailModalTitle').textContent = event.title;
+                document.getElementById('detailModalDate').textContent = event.start.toLocaleDateString();
+                document.getElementById('detailModalLocation').textContent = props.location;
+                document.getElementById('detailModalDescription').textContent = props.description;
+                document.getElementById('detailModalCoordinator').textContent = props.coordinator_name;
+
+                // Show/Hide Register Button based on registration status
+                const regBtn = document.getElementById('calendarRegisterBtn');
+                if (props.is_registered) {
+                    regBtn.classList.add('d-none');
+                    document.getElementById('alreadyRegisteredNote').classList.remove('d-none');
+                    document.getElementById('alreadyWaitlistedNote').classList.add('d-none');
+                } else if (props.is_waitlisted) {
+                    regBtn.classList.add('d-none');
+                    document.getElementById('alreadyRegisteredNote').classList.add('d-none');
+                    let waitlistNote = document.getElementById('alreadyWaitlistedNote');
+                    waitlistNote.innerHTML = '<i class="fas fa-clock me-1"></i> Waitlisted (Queue Pos: ' + (props.waitlist_pos ? props.waitlist_pos : '?') + ')';
+                    waitlistNote.classList.remove('d-none');
+                } else if (props.deadline_passed) {
+                    regBtn.classList.remove('d-none');
+                    regBtn.classList.replace('btn-primary', 'btn-danger');
+                    regBtn.textContent = 'Deadline Passed';
+                    regBtn.disabled = true;
+                    regBtn.onclick = null;
+                    document.getElementById('alreadyRegisteredNote').classList.add('d-none');
+                    document.getElementById('alreadyWaitlistedNote').classList.add('d-none');
+                } else {
+                    regBtn.classList.remove('d-none');
+                    regBtn.classList.replace('btn-danger', 'btn-primary');
+                    regBtn.textContent = 'Register Now';
+                    regBtn.disabled = false;
+                    document.getElementById('alreadyRegisteredNote').classList.add('d-none');
+                    document.getElementById('alreadyWaitlistedNote').classList.add('d-none');
+                    // Setup register button to open the existing registration modal
+                    regBtn.onclick = () => {
+                        const registerModal = new bootstrap.Modal(document.getElementById('eventRegisterModal'));
+                        // Setup the registration modal data
+                        document.getElementById('modalEventName').textContent = event.title;
+                        document.getElementById('registrationForm').action = `/register-event/${event.id}`;
+
+                        bootstrap.Modal.getInstance(document.getElementById('calendarEventDetailModal')).hide();
+                        registerModal.show();
+                    };
+                }
+
+                var detailModal = new bootstrap.Modal(document.getElementById('calendarEventDetailModal'));
+                detailModal.show();
+            }
+        });
+        calendar.render();
+    });
+</script>
+
+<script>
+    // Profile photo live preview
+    function previewPhoto(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                const el = document.getElementById('previewAvatar');
+                if (el.tagName === 'IMG') {
+                    el.src = e.target.result;
+                } else {
+                    // Replace the div with an img
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.id = 'previewAvatar';
+                    img.className = 'rounded-circle shadow';
+                    img.style.cssText = 'width:110px;height:110px;object-fit:cover;border:3px solid rgba(108,99,255,0.6);';
+                    el.parentNode.replaceChild(img, el);
+                }
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+</script>
+
+<!-- Calendar Event Detail Modal -->
+<div class="modal fade" id="calendarEventDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-ui">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold" id="detailModalTitle"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p><strong><i class="fas fa-calendar-alt me-2"></i>Date:</strong> <span id="detailModalDate"></span></p>
+                <p><strong><i class="fas fa-map-marker-alt me-2"></i>Location:</strong> <span
+                        id="detailModalLocation"></span></p>
+                <p><strong><i class="fas fa-user-tie me-2"></i>Coordinator:</strong> <span
+                        id="detailModalCoordinator"></span></p>
+                <p><strong><i class="fas fa-info-circle me-2"></i>Description:</strong></p>
+                <p id="detailModalDescription" class="text-muted"></p>
+
+                <div class="d-grid mt-4">
+                    <button id="calendarRegisterBtn" class="btn btn-primary">Register Now</button>
+                    <p id="alreadyRegisteredNote" class="text-success text-center d-none fw-bold"><i
+                            class="fas fa-check-circle me-1"></i> You are registered!</p>
+                    <p id="alreadyWaitlistedNote" class="text-warning text-center d-none fw-bold"><i
+                            class="fas fa-clock me-1"></i> You are on the waitlist!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Register Event Offcanvas (Bottom) -->
+<div class="offcanvas offcanvas-bottom h-100 glass-ui offcanvas-slow" tabindex="-1" id="registerEventOffcanvas"
+    aria-labelledby="registerEventOffcanvasLabel">
+    <div class="offcanvas-header border-bottom-0">
+        <h5 class="offcanvas-title fw-bold" id="registerEventOffcanvasLabel"><i
+                class="fas fa-calendar-alt me-2 text-primary"></i>Available
+            Events</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <div class="container">
+            <div class="row">
+                {% if events %}
+                {% for event in events %}
+                <div class="col-md-6 mb-3">
+                    <div class="card glass-ui border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ event.event_name }}</h5>
+                            <h6 class="card-subtitle mb-2 text-muted">
+                                {{ event.event_date }} | {{ event.location }}
+                                {% if event.coordinator_name %}
+                                <span class="ms-2 small">| <i class="fas fa-user-tie me-1"></i>{{ event.coordinator_name }}</span>
+                                {% endif %}
+                                {% if event.department and event.department != 'All' %}
+                                <span class="badge bg-warning text-dark ms-2"><i class="fas fa-crosshairs me-1"></i>{{ event.department }} Only</span>
+                                {% endif %}
+                            </h6>
+                            <p class="card-text">{{ event.description }}</p>
+
+                            {% if event.is_registered %}
+                            <button class="btn btn-success w-100" disabled>
+                                <i class="fas fa-check-circle me-1"></i> Registered Successfully
+                            </button>
+                            {% elif event.deadline_passed %}
+                            <button class="btn btn-danger w-100" disabled>
+                                <i class="fas fa-clock me-1"></i> Deadline Passed
+                            </button>
+                            {% elif event.is_waitlisted %}
+                            <button class="btn btn-warning w-100 text-dark" disabled><i
+                                    class="fas fa-clock me-2"></i>Waitlist Queue: #{{ event.waitlist_pos }}</button>
+                            {% else %}
+                            <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal"
+                                data-bs-target="#eventRegisterModal" data-event-id="{{ event.event_id }}"
+                                data-event-name="{{ event.event_name }}">
+                                <i class="fas fa-calendar-plus me-1"></i> Register Now
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="col-12 text-center">
+                    <p class="text-muted">No upcoming events available for registration.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Event History Modal -->
+<div class="modal fade" id="historyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content glass-ui">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold"><i class="fas fa-history me-2 text-primary"></i>Participation History
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted mb-3">You have participated in <span class="fw-bold text-success">{{ attended_count
+                        }}</span> events in the past.</p>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Event Name</th>
+                                <th>Date</th>
+                                <th>Location</th>
+                                <th>Attendance</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in registrations %}
+                            <tr>
+                                <td>{{ r.event_name }}</td>
+                                <td>{{ r.event_date }}</td>
+                                <td>{{ r.location }}</td>
+                                <td>
+                                    {% if r.attendance == 'Present' %}
+                                    <span class="badge bg-success">Attended</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Not Marked</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            {% if not registrations %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">No history found.</td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Event Registration Modal -->
+<div class="modal fade" id="eventRegisterModal" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content glass-ui">
+            <div class="modal-header border-0">
+                <div>
+                    <h5 class="modal-title mb-0">Register for <span id="modalEventName" class="text-primary"></span>
+                    </h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Registration Form -->
+                <div id="formStep">
+                    <form id="registrationForm" method="POST" action="">
+                        <div class="mb-3">
+                            <label class="form-label">Full Name</label>
+                            <input type="text" name="name" class="form-control" value="{{ session.get('name', '') }}"
+                                required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Register Number</label>
+                            <input type="text" name="register_number" class="form-control"
+                                value="{{ session.get('register_number', '') }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" name="email" class="form-control" value="{{ session.get('email', '') }}"
+                                required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Semester</label>
+                            <select name="semester" class="form-select" required>
+                                <option value="" {% if not session.get('semester') %}selected{% endif %} disabled>Select
+                                    Semester</option>
+                                {% for i in range(1, 9) %}
+                                <option value="{{ i }}" {% if session.get('semester')|string==i|string %}selected{%
+                                    endif %}>
+                                    {{ i }}{% if i == 1 %}st{% elif i == 2 %}nd{% elif i == 3 %}rd{% else %}th{% endif
+                                    %} Semester
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary fw-bold">Confirm Registration</button>
+                        </div>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Feedback Modal -->
+<div class="modal fade" id="feedbackModal" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-ui">
+            <div class="modal-header border-0">
+                <h5 class="modal-title">Rate Event: <span id="feedbackEventName" class="text-primary"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="feedbackForm" method="POST" action="/submit-feedback">
+                    <input type="hidden" name="event_id" id="feedbackEventId">
+
+                    <div class="mb-4 text-center">
+                        <label class="form-label d-block fw-bold mb-2">How was your experience?</label>
+                        <div class="d-flex justify-content-center gap-2">
+                            <input type="radio" class="btn-check" name="rating" id="rating5" value="5" checked>
+                            <label class="btn btn-outline-warning" for="rating5">5 <i class="fas fa-star"></i></label>
+
+                            <input type="radio" class="btn-check" name="rating" id="rating4" value="4">
+                            <label class="btn btn-outline-warning" for="rating4">4 <i class="fas fa-star"></i></label>
+
+                            <input type="radio" class="btn-check" name="rating" id="rating3" value="3">
+                            <label class="btn btn-outline-warning" for="rating3">3 <i class="fas fa-star"></i></label>
+
+                            <input type="radio" class="btn-check" name="rating" id="rating2" value="2">
+                            <label class="btn btn-outline-warning" for="rating2">2 <i class="fas fa-star"></i></label>
+
+                            <input type="radio" class="btn-check" name="rating" id="rating1" value="1">
+                            <label class="btn btn-outline-warning" for="rating1">1 <i class="fas fa-star"></i></label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Comments</label>
+                        <textarea name="comments" class="form-control" rows="3"
+                            placeholder="Share your thoughts about the event..." required></textarea>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Submit Feedback</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cancel Registration Modal -->
+<div class="modal fade" id="cancelRegistrationModal" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-ui text-center p-4 border-0">
+            <div class="modal-body">
+                <div class="mb-3">
+                    <i class="fas fa-exclamation-circle fa-5x text-danger"></i>
+                </div>
+                <h4 class="mt-3 fw-bold text-danger">Cancel Registration?</h4>
+                <p class="mb-4 text-muted">Are you sure you want to cancel your registration for <strong
+                        id="cancelEventName"></strong>?</p>
+                <div class="d-flex justify-content-center gap-3">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Keep It</button>
+                    <a id="confirmCancelBtn" href="#" class="btn btn-danger">Yes, Cancel</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Change Password Modal -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-ui">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold text-white"><i class="fas fa-key me-2 text-warning"></i>Change Password
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="{{ url_for('auth.change_password') }}">
+                    <div class="mb-3">
+                        <label class="form-label text-white-50 small fw-bold">Current Password</label>
+                        <input type="password" name="current_password" class="form-control glass-input text-white"
+                            required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-white-50 small fw-bold">New Password</label>
+                        <input type="password" name="new_password" class="form-control glass-input text-white" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-white-50 small fw-bold">Confirm New Password</label>
+                        <input type="password" name="confirm_password" class="form-control glass-input text-white"
+                            required>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-warning fw-bold">Update Password</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Co-curricular Transcript Modal -->
+<div class="modal fade" id="transcriptModal" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content glass-ui">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold text-warning"><i class="fas fa-award me-2"></i> Co-curricular Transcript
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h4 class="fw-bold mb-0 text-white">Current Rank: <span class="text-warning">{{ badge }}</span>
+                        </h4>
+                        <p class="text-white-50 form-text mb-0">Total Activity Points: {{ total_campus_points|default(0)
+                            }}</p>
+                    </div>
+                    <i class="fas fa-trophy fa-3x text-warning opacity-75"></i>
+                </div>
+
+                <h6 class="text-white fw-bold mb-3 border-bottom border-light pb-2">Activity Points History</h6>
+                {% set ns = namespace(found=false) %}
+                <ul class="list-group list-group-flush bg-transparent">
+                    {% for r in registrations %}
+                    {% if r.attendance == 'Present' and r.points_awarded %}
+                    {% set ns.found = true %}
+                    <li
+                        class="list-group-item bg-transparent text-white border-bottom border-light d-flex justify-content-between align-items-center px-0">
+                        <div>
+                            <h6 class="mb-0 fw-bold">{{ r.event_name }}</h6>
+                            <small class="text-white-50"><i class="fas fa-tag me-1 text-info"></i>{{ r.event_type }}
+                                &nbsp; | &nbsp; <i class="far fa-calendar-alt text-muted ms-1"></i> {{ r.event_date
+                                }}</small>
+                        </div>
+                        <span class="badge bg-warning text-dark rounded-pill fs-6">+{{ r.points_awarded }} pts</span>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+
+                    {% if not ns.found %}
+                    <li class="list-group-item bg-transparent text-white-50 border-0 px-0 text-center py-4">
+                        <i class="fas fa-info-circle fa-2x mb-2 opacity-50"></i><br>
+                        Attend events to start earning Activity Points!
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Register Event Modal Logic
+        const registerModal = document.getElementById('eventRegisterModal');
+        if (registerModal) {
+            registerModal.addEventListener('show.bs.modal', ev => {
+                const btn = ev.relatedTarget;
+                const eventId = btn.getAttribute('data-event-id');
+                const eventName = btn.getAttribute('data-event-name');
+
+                const modalTitle = document.getElementById('modalEventName');
+                if (modalTitle) modalTitle.textContent = eventName;
+                const form = document.getElementById('registrationForm');
+                if (form) form.action = `/register-event/${eventId}`;
+            });
+        }
+
+
+        // Feedback Modal Logic
+        const feedbackModal = document.getElementById('feedbackModal');
+        if (feedbackModal) {
+            feedbackModal.addEventListener('show.bs.modal', event => {
+                const button = event.relatedTarget;
+                const eventId = button.getAttribute('data-event-id');
+                const eventName = button.getAttribute('data-event-name');
+
+                const modalTitle = document.getElementById('feedbackEventName');
+                if (modalTitle) modalTitle.textContent = eventName;
+
+                const inputId = document.getElementById('feedbackEventId');
+                if (inputId) inputId.value = eventId;
+            });
+        }
+
+        // Cancel Registration Modal Logic
+        const cancelBtns = document.querySelectorAll('.cancel-reg-btn');
+        cancelBtns.forEach(btn => {
+            btn.addEventListener('click', function () {
+                const href = this.getAttribute('data-href');
+                const name = this.getAttribute('data-event-name');
+                const confirmBtn = document.getElementById('confirmCancelBtn');
+                const nameSpan = document.getElementById('cancelEventName');
+
+                if (confirmBtn) confirmBtn.href = href;
+                if (nameSpan) nameSpan.textContent = name;
+
+                const modalEl = document.getElementById('cancelRegistrationModal');
+                if (modalEl) {
+                    new bootstrap.Modal(modalEl).show();
+                }
+            });
+        });
+        // Cancel Waitlist Modal Logic
+        const cancelWaitlistBtns = document.querySelectorAll('.cancel-waitlist-btn');
+        cancelWaitlistBtns.forEach(btn => {
+            btn.addEventListener('click', function () {
+                const href = this.getAttribute('data-href');
+                const name = this.getAttribute('data-event-name');
+                const confirmBtn = document.getElementById('confirmCancelBtn');
+                const nameSpan = document.getElementById('cancelEventName');
+
+                if (confirmBtn) confirmBtn.href = href;
+                if (nameSpan) nameSpan.textContent = name;
+
+                const modalEl = document.getElementById('cancelRegistrationModal');
+                if (modalEl) {
+                    new bootstrap.Modal(modalEl).show();
+                }
+            });
+        });
+    });
+</script>
+<!-- Floating Chat Widget -->
+<div id="chatbot-container" class="chatbot-closed animate__animated">
+    <div class="chatbot-header d-flex justify-content-between align-items-center">
+        <span class="fw-bold"><i class="fas fa-robot me-2"></i>EVENTORA AI Assistant</span>
+        <button id="close-chat" class="btn btn-sm text-white p-0 shadow-none"><i class="fas fa-times"></i></button>
+    </div>
+    <div id="chat-messages" class="chat-body p-3">
+        <div class="ai-message mb-3">
+            <div class="message-bubble glass-panel p-2 small shadow-sm">
+                Hello! I'm your EVENTORA AI. Ask me about your points, registrations, or upcoming events!
+            </div>
+        </div>
+    </div>
+    <div class="chat-footer p-2 border-top border-white border-opacity-10">
+        <div class="input-group">
+            <input type="text" id="userInput"
+                class="form-control form-control-sm bg-transparent text-white border-0 shadow-none"
+                placeholder="Ask me something..." autocomplete="off">
+            <button onclick="sendMessage()"
+                class="btn btn-sm rounded-circle ms-2 d-flex align-items-center justify-content-center shadow-sm"
+                style="width: 35px; height: 35px; min-width: 35px; background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: white;">
+                <i class="fas fa-paper-plane" style="font-size: 0.9rem;"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<button id="chatbot-toggle" class="btn rounded-circle shadow-lg animate__animated animate__bounceIn"
+    style="background: linear-gradient(135deg, #f39c12, #e67e22); color: white; border: none; width: 60px; height: 60px;">
+    <i class="fas fa-comment-dots fa-lg"></i>
+</button>
+
+<style>
+    /* Chatbot Styles */
+    #chatbot-toggle {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        z-index: 1050;
+        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    #chatbot-toggle:hover {
+        transform: scale(1.1) rotate(5deg);
+    }
+
+    #chatbot-container {
+        position: fixed;
+        bottom: 100px;
+        right: 30px;
+        width: 350px;
+        height: 480px;
+        z-index: 2000;
+        display: flex;
+        flex-direction: column;
+        background: rgba(15, 23, 42, 0.85);
+        /* Deep dark background */
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        box-shadow: 0 15px 50px rgba(0, 0, 0, 0.6);
+        transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+    #chatbot-container.chatbot-closed {
+        opacity: 0;
+        transform: translateY(50px) scale(0.8);
+        pointer-events: none;
+    }
+
+    .chatbot-header {
+        background: linear-gradient(135deg, #f39c12, #e67e22);
+        padding: 15px;
+        border-radius: 20px 20px 0 0;
+        color: white;
+    }
+
+    .chat-body {
+        flex: 1;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .message-bubble {
+        max-width: 85%;
+        border-radius: 18px;
+        color: white;
+        word-wrap: break-word;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .ai-message .message-bubble {
+        background: rgba(255, 255, 255, 0.1);
+        border-bottom-left-radius: 4px;
+        align-self: flex-start;
+    }
+
+    .user-message {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .user-message .message-bubble {
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        border-bottom-right-radius: 4px;
+        animation: slideInRight 0.3s ease-out;
+    }
+
+    @keyframes slideInRight {
+        from {
+            transform: translateX(20px);
+            opacity: 0;
+        }
+
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    .chat-body::-webkit-scrollbar {
+        width: 5px;
+    }
+
+    .chat-body::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+    }
+
+    .chat-footer {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 0 0 20px 20px;
+    }
+</style>
+
+<script>
+    // Chatbot Frontend Logic
+    document.addEventListener('DOMContentLoaded', () => {
+        const chatbotToggle = document.getElementById('chatbot-toggle');
+        const chatbotContainer = document.getElementById('chatbot-container');
+        const closeChat = document.getElementById('close-chat');
+        const userInput = document.getElementById('userInput');
+        const chatMessages = document.getElementById('chat-messages');
+
+        chatbotToggle.addEventListener('click', () => {
+            chatbotContainer.classList.toggle('chatbot-closed');
+            if (!chatbotContainer.classList.contains('chatbot-closed')) {
+                userInput.focus();
+                // Scroll to bottom
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+        });
+
+        closeChat.addEventListener('click', () => {
+            chatbotContainer.classList.add('chatbot-closed');
+        });
+
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        window.sendMessage = () => {
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            // Add user message to UI
+            appendMessage('user', message);
+            userInput.value = '';
+
+            // Add loading state
+            const loadingId = 'loading-' + Date.now();
+            appendMessage('ai', '<span class="loading-dots">... thinking</span>', loadingId);
+
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            fetch("/chatbot", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: message })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    const loadingBubble = document.getElementById(loadingId);
+                    if (loadingBubble) {
+                        loadingBubble.innerHTML = data.reply.replace(/\n/g, '<br>');
+                    } else {
+                        appendMessage('ai', data.reply.replace(/\n/g, '<br>'));
+                    }
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                })
+                .catch(error => {
+                    const loadingBubble = document.getElementById(loadingId);
+                    if (loadingBubble) loadingBubble.innerHTML = "I'm having trouble connecting. Check your internet!";
+                });
+        };
+
+        function appendMessage(sender, text, id = null) {
+            const div = document.createElement('div');
+            div.className = sender === 'user' ? 'user-message mb-3' : 'ai-message mb-3';
+            div.innerHTML = `
+                <div class="message-bubble ${sender === 'user' ? 'p-3' : 'glass-panel p-3'} small" ${id ? 'id="' + id + '"' : ''}>
+                    ${text}
+                </div>
+            `;
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    });
+
+    // Event Horizontal Scroll (BookMyShow Style)
+    document.querySelectorAll('.event-scroll-container').forEach(container => {
+        container.addEventListener('wheel', (evt) => {
+            evt.preventDefault();
+            evt.currentTarget.scrollLeft += evt.deltaY;
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,364 @@
+{% extends "base.html" %}
+
+{% block title %}EVENTORA | Unified Campus System{% endblock %}
+{% block body_class %}home-bg{% endblock %}
+
+{% block content %}
+
+<div class="hero-section min-vh-100 d-flex align-items-center position-relative overflow-hidden">
+    <!-- Ambient Floating shapes with enhanced blur -->
+    <div class="floating-shape shape-1" style="background: var(--accent-color); filter: blur(120px); opacity: 0.12;">
+    </div>
+    <div class="floating-shape shape-2"
+        style="background: var(--accent-secondary); filter: blur(150px); opacity: 0.08;"></div>
+
+    <div class="container py-5">
+        <div class="row align-items-center">
+            <div class="col-lg-10 mx-auto text-center">
+
+                <h1 class="hero-title display-3 fw-800 mb-4 animate__animated animate__fadeInUp">
+                    The University <span class="text-gradient">Ecosystem</span> <br>Redefined.
+                </h1>
+                <p class="hero-subtitle text-secondary lead mb-5 animate__animated animate__fadeInUp animate__delay-1s"
+                    style="max-width: 800px; margin-left: auto; margin-right: auto;">
+                    Experience a seamless integration of academic management, campus events, and real-time announcements
+                    in one powerful, unified dashboard.
+                </p>
+
+                <div
+                    class="d-flex flex-wrap gap-3 justify-content-center animate__animated animate__fadeInUp animate__delay-1s">
+                    <a href="/login" class="btn btn-primary btn-lg px-5 shadow-lg">Get Started <i
+                            class="fas fa-arrow-right ms-2 small"></i></a>
+                    <a href="/events" class="btn btn-primary btn-lg px-5 shadow-lg">Explore Events</a>
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions Section -->
+<div class="container py-5">
+    <div class="row g-4">
+        <div class="col-md-3">
+            <a href="{{ url_for('public.events') }}"
+                class="card glass-panel h-100 text-decoration-none transition-hover p-4">
+                <div class="card-body p-0">
+                    <div class="rounded-circle bg-accent bg-opacity-10 d-inline-flex p-3 mb-4">
+                        <i class="fas fa-calendar-day fa-2x text-accent"></i>
+                    </div>
+                    <h4 class="fw-bold mb-3">Campus Events</h4>
+                    <p class="text-secondary small mb-0">Discover technical workshops and cultural fests happening
+                        around you.</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="/login" class="card glass-panel h-100 text-decoration-none transition-hover p-4">
+                <div class="card-body p-0">
+                    <div class="rounded-circle bg-cyan bg-opacity-10 d-inline-flex p-3 mb-4"
+                        style="background: rgba(6, 182, 212, 0.1);">
+                        <i class="fas fa-user-graduate fa-2x" style="color: #06b6d4;"></i>
+                    </div>
+                    <h4 class="fw-bold mb-3">NIE Portal</h4>
+                    <p class="text-secondary small mb-0">Secure gateway for NIE students to access academics and
+                        profiles.</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="/login" class="card glass-panel h-100 text-decoration-none transition-hover p-4">
+                <div class="card-body p-0">
+                    <div class="rounded-circle bg-emerald bg-opacity-10 d-inline-flex p-3 mb-4"
+                        style="background: rgba(16, 185, 129, 0.1);">
+                        <i class="fas fa-clock fa-2x text-emerald" style="color: #10b981;"></i>
+                    </div>
+                    <h4 class="fw-bold mb-3">Personal Schedule</h4>
+                    <p class="text-secondary small mb-0">Stay organized with real-time timetables and academic calendar
+                        notifications.</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="/login?tab=inter" class="card glass-panel h-100 text-decoration-none transition-hover p-4"
+                style="border: 1px solid rgba(76, 201, 240, 0.3);">
+                <div class="card-body p-0">
+                    <div class="rounded-circle d-inline-flex p-3 mb-4" style="background: rgba(76, 201, 240, 0.1);">
+                        <i class="fas fa-globe fa-2x" style="color: #4cc9f0;"></i>
+                    </div>
+                    <h4 class="fw-bold mb-3">Guest Access</h4>
+                    <p class="text-secondary small mb-0">Separate portal for participants from other institutions to
+                        join our events.</p>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Bento Features Section -->
+<div class="container py-5">
+    <div class="text-center mb-5">
+        <h2 class="display-5 fw-800 mb-3">Enterprise Features</h2>
+        <p class="mx-auto" style="max-width: 600px; color: var(--text-primary); font-weight: 500;">
+            Built for the modern institution with security and scalability at its core.
+        </p>
+    </div>
+    <div class="row g-4">
+        <!-- Secure Infrastructure -->
+        <div class="col-lg-6">
+            <div class="card glass-panel h-100 p-4 border-0 shadow-lg position-relative overflow-hidden hover-scale transition-hover">
+                <div class="bg-warning position-absolute top-0 end-0 p-5 opacity-10"
+                    style="filter: blur(50px); border-radius: 50%;"></div>
+                <div class="mb-4">
+                    <div class="rounded-circle bg-warning bg-opacity-20 d-inline-flex p-3">
+                        <i class="fas fa-shield-alt fa-2x text-warning"></i>
+                    </div>
+                </div>
+                <h4 class="fw-bold">Secure Infrastructure</h4>
+                <p class="text-secondary small mb-0">Enterprise-grade security ensuring safe attendance and registration records. Includes robust authorization policies and continuous system monitoring.</p>
+            </div>
+        </div>
+
+        <!-- Automated Certificates -->
+        <div class="col-lg-6">
+            <div class="card glass-panel h-100 p-4 border-0 shadow-lg position-relative overflow-hidden hover-scale transition-hover">
+                <div class="bg-success position-absolute top-0 end-0 p-5 opacity-10"
+                    style="filter: blur(50px); border-radius: 50%;"></div>
+                <div class="mb-4">
+                    <div class="rounded-circle bg-success bg-opacity-20 d-inline-flex p-3">
+                        <i class="fas fa-file-certificate fa-2x text-success"></i>
+                    </div>
+                </div>
+                <h4 class="fw-bold">Automated Certification</h4>
+                <p class="text-secondary small mb-0">Instantly generate and distribute co-curricular certificates upon event completion. Secure verification system to prevent unauthorized credentialing.</p>
+            </div>
+        </div>
+
+        <!-- Real-time Analytics -->
+        <div class="col-lg-6">
+            <div class="card glass-panel h-100 p-4 border-0 shadow-lg position-relative overflow-hidden hover-scale transition-hover">
+                <div class="bg-info position-absolute top-0 end-0 p-5 opacity-10"
+                    style="filter: blur(50px); border-radius: 50%;"></div>
+                <div class="mb-4">
+                    <div class="rounded-circle bg-info bg-opacity-20 d-inline-flex p-3">
+                        <i class="fas fa-chart-line fa-2x text-info"></i>
+                    </div>
+                </div>
+                <h4 class="fw-bold">Advanced Analytics</h4>
+                <p class="text-secondary small mb-0">Comprehensive dashboards for faculty and admins. Track participation rates, popular event trends, and student engagement metrics in real-time.</p>
+            </div>
+        </div>
+
+        <!-- Unified Communication -->
+        <div class="col-lg-6">
+            <div class="card glass-panel h-100 p-4 border-0 shadow-lg position-relative overflow-hidden hover-scale transition-hover">
+                <div class="bg-primary position-absolute top-0 end-0 p-5 opacity-10"
+                    style="filter: blur(50px); border-radius: 50%;"></div>
+                <div class="mb-4">
+                    <div class="rounded-circle bg-primary bg-opacity-20 d-inline-flex p-3">
+                        <i class="fas fa-comment-dots fa-2x text-primary"></i>
+                    </div>
+                </div>
+                <h4 class="fw-bold">Seamless Communication</h4>
+                <p class="text-secondary small mb-0">Integrated AI assistant and announcement system to keep students informed about upcoming events, deadlines, and registration statuses.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- About Section -->
+<div class="container mb-5">
+    <div class="card glass-panel border-0 p-5">
+        <div class="row align-items-center">
+            <div class="col-lg-6 mb-4 mb-lg-0">
+                <h2 class="fw-bold text-white mb-3">Why Choose Eventora?</h2>
+                <p class="text-white-50 lead mb-4">
+                    Eventora is designed to organize the ecosystem of campus life.
+                    Our integrated platform simplifies everything from academic schedules
+                    to vibrant cultural event participation.
+                </p>
+                <div class="d-flex flex-wrap gap-3">
+                    <div class="d-flex align-items-center text-white">
+                        <i class="fas fa-check-circle text-primary me-2"></i> Centralized Hub
+                    </div>
+                    <div class="d-flex align-items-center text-white">
+                        <i class="fas fa-check-circle text-primary me-2"></i> Real-time Updates
+                    </div>
+                    <div class="d-flex align-items-center text-white">
+                        <i class="fas fa-check-circle text-primary me-2"></i> Secure Data
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 text-center">
+                <div class="rounded-4 p-4"
+                    style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
+                    <i class="fas fa-university fa-5x text-white opacity-50 mb-3"></i>
+                    <h4 class="text-white">Empowering Campus Life</h4>
+                    <p class="text-white-50 small">Connecting over 500+ students and faculty members.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="calendar-section mt-5 mb-5 container">
+    <div class="card glass-panel p-4 border-0 shadow-lg" style="border-radius: 20px;">
+        <h3 class="mb-4 text-center fw-bold" style="color: var(--text-primary);"><i class="fas fa-calendar-alt me-2 text-primary"></i>Event
+            Calendar</h3>
+        <div id="calendar"
+            style="background: var(--glass-highlight); padding: 20px; border-radius: 15px;"></div>
+    </div>
+</div>
+
+<!-- Location Section -->
+<section class="location-section">
+    <div class="container">
+        <h3>Our College Location</h3>
+        <p>Nirmala College of Engineering</p>
+
+        <div class="map-wrapper">
+            <img src="{{ url_for('static', filename='images/college.png') }}" alt="College Location Map"
+                class="map-image img-fluid">
+        </div>
+
+        <div class="map-link">
+            <a href="https://maps.google.com/?q=Nirmala+College+of+Engineering" target="_blank" class="btn-map">
+                <i class="fas fa-map-marker-alt me-2"></i> View Live Location on Google Maps
+            </a>
+        </div>
+    </div>
+</section>
+
+<footer class="footer">
+    <p>&copy; 2026 EventEase. All Rights Reserved.</p>
+</footer>
+
+<!-- FullCalendar CSS and JS -->
+<link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css' rel='stylesheet' />
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
+
+<style>
+    /* Customize FullCalendar Colors */
+    .fc {
+        --fc-border-color: var(--glass-border);
+        --fc-today-bg-color: rgba(67, 97, 238, 0.2);
+        color: var(--text-primary);
+    }
+
+    .fc-event {
+        cursor: pointer;
+        padding: 4px 8px;
+        font-weight: 500;
+        background: #4361ee !important;
+        border: none !important;
+        border-radius: 6px !important;
+    }
+
+    .fc-toolbar-title {
+        color: var(--text-primary) !important;
+    }
+
+    .fc-col-header-cell-cushion,
+    .fc-daygrid-day-number {
+        color: var(--text-primary) !important;
+        text-decoration: none !important;
+    }
+
+    .fc-button-primary {
+        background-color: #4361ee !important;
+        border: none !important;
+        box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3) !important;
+    }
+
+    .fc-button-primary:hover {
+        background-color: #3a56d4 !important;
+    }
+</style>
+
+<!-- Event Data for Calendar -->
+<script id="calendar-events-data" type="application/json">
+    [
+        {% for event in events %}
+        {
+            "id": "{{ event.event_id }}",
+            "title": {{ event.event_name|tojson }},
+            "start": "{{ event.event_date }}",
+            "extendedProps": {
+                "description": {{ event.description|tojson }},
+                "location": {{ event.location|tojson }},
+                "is_registered": {{ 'true' if event.is_registered else 'false' }}
+            }
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ]
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var calendarEl = document.getElementById('calendar');
+        var eventsData = JSON.parse(document.getElementById('calendar-events-data').textContent);
+
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            fixedWeekCount: false,
+            events: eventsData,
+            eventClick: function (info) {
+                const event = info.event;
+                const props = event.extendedProps;
+
+                // Populate Detail Modal
+                document.getElementById('detailModalTitle').textContent = event.title;
+                document.getElementById('detailModalDate').textContent = event.start.toLocaleDateString();
+                document.getElementById('detailModalLocation').textContent = props.location;
+                document.getElementById('detailModalDescription').textContent = props.description;
+
+                // Handle Buttons dynamically
+                const btnContainer = document.getElementById('modalActionContainer');
+                const userRole = "{{ session.get('role', '') }}";
+
+                if (!userRole) {
+                    btnContainer.innerHTML = `<a href="{{ url_for('auth.login') }}" class="btn btn-primary">Login to Register</a>`;
+                } else if (userRole === 'student') {
+                    if (props.is_registered) {
+                        btnContainer.innerHTML = `<a href="{{ url_for('student.student_dashboard') }}" class="btn btn-success"><i class="fas fa-check-circle me-1"></i> Already Registered - View Dashboard</a>`;
+                    } else {
+                        btnContainer.innerHTML = `<a href="{{ url_for('student.student_dashboard') }}" class="btn btn-primary">Register Now in Dashboard</a>`;
+                    }
+                } else {
+                    btnContainer.innerHTML = `<button class="btn btn-secondary" disabled>Faculty/Admin View Only</button>`;
+                }
+
+                var detailModal = new bootstrap.Modal(document.getElementById('calendarEventDetailModal'));
+                detailModal.show();
+            }
+        });
+        calendar.render();
+    });
+</script>
+
+<!-- Calendar Event Detail Modal -->
+<div class="modal fade" id="calendarEventDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-ui text-white">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold" id="detailModalTitle"></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p><strong><i class="fas fa-calendar-alt me-2 text-primary"></i>Date:</strong> <span
+                        id="detailModalDate"></span></p>
+                <p><strong><i class="fas fa-map-marker-alt me-2 text-primary"></i>Location:</strong> <span
+                        id="detailModalLocation"></span></p>
+                <p><strong><i class="fas fa-info-circle me-2 text-primary"></i>Description:</strong></p>
+                <p id="detailModalDescription" class="text-secondary small"></p>
+
+                <div class="d-grid mt-4" id="modalActionContainer">
+                    <!-- Dynamic button will be inserted here by JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

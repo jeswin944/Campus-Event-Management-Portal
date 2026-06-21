@@ -1,0 +1,447 @@
+{% extends 'base.html' %}
+{% block title %}Daily Attendance{% endblock %}
+{% block content %}
+
+<!-- FullCalendar -->
+<link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css' rel='stylesheet'>
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
+
+<div class="container mt-4">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h3 class="fw-bold text-white mb-0">
+                <i class="fas fa-check-double me-2 text-success"></i>Daily Attendance
+            </h3>
+            <small class="text-white-50">
+                <i class="far fa-calendar me-1"></i>
+                Today: <strong class="text-warning">{{ today_name }}</strong>
+                &nbsp;|&nbsp; {{ today_date }}
+            </small>
+        </div>
+        <a href="{{ url_for('faculty.faculty_dashboard') }}" class="btn btn-back-theme px-3">
+            <i class="fas fa-arrow-left me-1"></i>Back
+        </a>
+    </div>
+
+    <!-- Tabs -->
+    <ul class="nav nav-pills mb-4 gap-2 flex-wrap" id="attTabs">
+        <li class="nav-item">
+            <button class="nav-link active fw-bold px-4" id="todayTabBtn" onclick="showTab('today')">
+                <i class="fas fa-star me-1 text-warning"></i>Today's Periods
+                <span class="badge bg-warning text-dark ms-1">{{ today_slots|length }}</span>
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link fw-bold px-4" id="historyTabBtn" onclick="showTab('history')">
+                <i class="fas fa-history me-1"></i>Attendance History
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link fw-bold px-4" id="weekTabBtn" onclick="showTab('week')">
+                <i class="fas fa-calendar-week me-1"></i>All Week
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link fw-bold px-4" id="calTabBtn" onclick="showTab('calendar')">
+                <i class="fas fa-calendar-alt me-1"></i>History Calendar
+            </button>
+        </li>
+    </ul>
+
+    <!-- ═══════════════════ TODAY'S PERIODS ═══════════════════ -->
+    <div id="todayTab">
+
+        <!-- Mark Today's Attendance (admin-style table) -->
+        <div class="card glass-panel border-0 shadow-lg p-4 mb-4">
+            <h5 class="text-white mb-3">
+                <i class="fas fa-calendar-check me-2 text-warning"></i>
+                Mark Today's Attendance ({{ today_date }})
+            </h5>
+            {% if today_slots %}
+            <div class="table-responsive">
+                <table class="table table-hover text-white align-middle small mb-0">
+                    <thead class="table-dark bg-transparent">
+                        <tr>
+                            <th>Course</th>
+                            <th>Dept / Sem</th>
+                            <th>Time Slot</th>
+                            <th>Room</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for slot in today_slots %}
+                        <tr>
+                            <td class="fw-bold">
+                                {% if slot.is_break %}
+                                <span class="badge bg-warning text-dark me-1">Break</span>
+                                {% endif %}
+                                {{ slot.course_name or 'Break / Off' }}
+                            </td>
+                            <td class="text-white-50">{{ slot.department }} – Sem {{ slot.semester }}</td>
+                            <td>
+                                <span class="badge bg-info text-dark fw-bold">
+                                    <i class="far fa-clock me-1"></i>
+                                    {{ slot.start_time|fmt_time }} – {{ slot.end_time|fmt_time }}
+                                </span>
+                            </td>
+                            <td class="text-white-50">{{ slot.classroom or 'N/A' }}</td>
+                            <td class="text-end">
+                                <a href="{{ url_for('faculty.mark_students_attendance', timetable_id=slot.timetable_id) }}"
+                                    class="btn btn-sm btn-warning fw-bold px-3">
+                                    <i class="fas fa-user-check me-1"></i>Mark
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-calendar-check fa-3x text-white opacity-25 mb-3 d-block"></i>
+                <p class="text-white-50 mb-2">No classes scheduled for today ({{ today_name }}).</p>
+                <div class="d-flex gap-2 justify-content-center">
+                    <button class="btn btn-outline-light btn-sm" onclick="showTab('week')">
+                        <i class="fas fa-calendar-week me-1"></i>All Week
+                    </button>
+                    <button class="btn btn-outline-info btn-sm" onclick="showTab('calendar')">
+                        <i class="fas fa-calendar-alt me-1"></i>History
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <!-- ═══════════════════ ATTENDANCE HISTORY ═══════════════════ -->
+    <div id="historyTab" style="display:none;">
+
+        <!-- Date filter -->
+        <div class="card glass-panel border-0 shadow-sm p-3 mb-4">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div>
+                    <h5 class="text-white mb-0">
+                        <i class="fas fa-history me-2 text-info"></i>Attendance History
+                    </h5>
+                    <small class="text-white-50">View all previously marked sessions</small>
+                </div>
+                <form method="GET" class="d-flex align-items-center gap-2">
+                    <input type="hidden" name="tab" value="history">
+                    <label class="text-white-50 small mb-0">Filter by date:</label>
+                    <input type="date" name="filter_date" value="{{ filter_date or '' }}"
+                        class="form-control glass-input text-white border-0 fw-bold" style="max-width:180px;"
+                        onchange="this.form.submit()">
+                    {% if filter_date %}
+                    <a href="{{ url_for('faculty.daily_attendance_overview') }}?tab=history"
+                        class="btn btn-outline-danger btn-sm">
+                        <i class="fas fa-times"></i> Clear
+                    </a>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+
+        <div class="card glass-panel border-0 shadow-lg p-0 overflow-hidden">
+            <div class="card-body p-0">
+                {% if history_records %}
+                <div class="table-responsive">
+                    <table class="table table-hover text-white align-middle mb-0">
+                        <thead class="table-dark bg-transparent">
+                            <tr>
+                                <th class="ps-4">Date</th>
+                                <th>Course</th>
+                                <th>Dept / Sem</th>
+                                <th>Attendance</th>
+                                <th class="text-end pe-4">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for rec in history_records %}
+                            <tr>
+                                <td class="ps-4">
+                                    <span class="badge bg-primary">{{ rec.attendance_date }}</span>
+                                </td>
+                                <td class="fw-bold">{{ rec.course_name or '—' }}</td>
+                                <td class="text-white-50 small">{{ rec.department }} – Sem {{ rec.semester }}</td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="progress"
+                                            style="width:80px; height:6px; background:rgba(255,255,255,0.1);">
+                                            {% set pct = ((rec.present_count / rec.total_students) * 100)|round if
+                                            rec.total_students > 0 else 0 %}
+                                            <div class="progress-bar {{ 'bg-success' if pct >= 75 else ('bg-warning' if pct >= 50 else 'bg-danger') }}"
+                                                data-width="{{ pct }}"></div>
+                                        </div>
+                                        <small class="text-white-50">{{ rec.present_count }}/{{ rec.total_students
+                                            }}</small>
+                                    </div>
+                                </td>
+                                <td class="text-end pe-4">
+                                    <a href="{{ url_for('faculty.mark_students_attendance', timetable_id=rec.timetable_id) }}?date={{ rec.attendance_date }}"
+                                        class="btn btn-sm btn-info fw-bold">
+                                        <i class="fas fa-eye me-1"></i>View/Edit
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-folder-open fa-3x mb-3 text-white-50"></i>
+                    <p class="text-white-50">No attendance records found yet.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ═══════════════════ ALL WEEK ═══════════════════ -->
+    <div id="weekTab" style="display:none;">
+        <div class="card glass-panel border-0 shadow-lg overflow-hidden">
+            <div class="card-body p-0">
+                {% if all_slots %}
+                <div class="table-responsive">
+                    <table class="table table-hover text-white align-middle mb-0">
+                        <thead class="table-dark bg-transparent border-bottom border-white border-opacity-10">
+                            <tr>
+                                <th class="ps-4">Day</th>
+                                <th>Course</th>
+                                <th>Dept / Sem</th>
+                                <th>Time</th>
+                                <th>Room</th>
+                                <th class="text-end pe-4">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for slot in all_slots %}
+                            <tr class="{% if slot.day == today_name %}table-active{% endif %}">
+                                <td class="ps-4 fw-bold">
+                                    {% if slot.day == today_name %}
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="fas fa-star me-1"></i>{{ slot.day }}
+                                    </span>
+                                    {% else %}
+                                    <span class="text-white-50">{{ slot.day }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="fw-bold">{{ slot.course_name or '—' }}</td>
+                                <td class="text-white-50 small">{{ slot.department }} – Sem {{ slot.semester }}</td>
+                                <td>
+                                    <span class="badge bg-info text-dark fw-bold">
+                                        <i class="far fa-clock me-1"></i>
+                                        {{ slot.start_time|fmt_time }} – {{ slot.end_time|fmt_time }}
+                                    </span>
+                                </td>
+                                <td class="text-white-50 small">{{ slot.classroom or 'N/A' }}</td>
+                                <td class="text-end pe-4">
+                                    <a href="{{ url_for('faculty.mark_students_attendance', timetable_id=slot.timetable_id) }}"
+                                        class="btn btn-sm btn-primary fw-bold">
+                                        <i class="fas fa-user-check me-1"></i>Mark
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-calendar-times fa-3x text-white-50 opacity-25 mb-3 d-block"></i>
+                    <p class="text-white-50">No classes assigned yet.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════ HISTORY CALENDAR ═══════════════════ -->
+    <div id="calendarTab" style="display:none;">
+        <!-- Legend -->
+        <div class="d-flex gap-3 mb-3 flex-wrap">
+            <span class="badge px-3 py-2 fw-bold" style="background:#198754; border-radius:30px; font-size:0.8rem;">
+                <i class="fas fa-circle me-1"></i>≥ 75% Present
+            </span>
+            <span class="badge px-3 py-2 fw-bold" style="background:#fd7e14; border-radius:30px; font-size:0.8rem;">
+                <i class="fas fa-circle me-1"></i>50–74% Present
+            </span>
+            <span class="badge px-3 py-2 fw-bold" style="background:#dc3545; border-radius:30px; font-size:0.8rem;">
+                <i class="fas fa-circle me-1"></i>&lt; 50% Present
+            </span>
+            <span class="text-white-50 small align-self-center">
+                <i class="fas fa-info-circle me-1"></i>Click any date to see period-wise details
+            </span>
+        </div>
+
+        <!-- Calendar Card -->
+        <div class="card glass-panel border-0 shadow-lg">
+            <div class="card-body p-4">
+                <div id="attendanceCalendar"></div>
+            </div>
+        </div>
+
+        <!-- Detail popup -->
+        <div class="modal fade" id="dayDetailModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content glass-ui border-0 shadow-lg">
+                    <div class="modal-header border-0">
+                        <h5 class="modal-title fw-bold text-white" id="dayDetailTitle">
+                            <i class="fas fa-calendar-day me-2 text-info"></i>
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body" id="dayDetailBody"></div>
+                    <div class="modal-footer border-0">
+                        <div class="w-100 text-center">
+                            <div class="display-6 fw-bold" id="dayDetailRate" style="color:#4cc9f0;"></div>
+                            <small class="text-white-50">Overall Attendance Rate</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<style>
+    #attendanceCalendar {
+        --fc-border-color: rgba(255, 255, 255, 0.1);
+        --fc-page-bg-color: transparent;
+        --fc-neutral-bg-color: rgba(255, 255, 255, 0.05);
+        color: white;
+    }
+
+    #attendanceCalendar .fc-col-header-cell-cushion,
+    #attendanceCalendar .fc-daygrid-day-number {
+        color: rgba(255, 255, 255, 0.8) !important;
+        text-decoration: none !important;
+    }
+
+    #attendanceCalendar .fc-button-primary {
+        background: #4361ee !important;
+        border: none !important;
+        font-weight: 700;
+    }
+
+    #attendanceCalendar .fc-today-button {
+        background: #198754 !important;
+    }
+
+    #attendanceCalendar .fc-daygrid-day.fc-day-today {
+        background: rgba(67, 97, 238, 0.15) !important;
+    }
+
+    #attendanceCalendar .fc-event {
+        border-radius: 8px !important;
+        padding: 2px 6px;
+        cursor: pointer;
+        font-weight: 600;
+    }
+
+    #attendanceCalendar .fc-toolbar-title {
+        color: white;
+        font-weight: 700;
+    }
+</style>
+
+<script>
+    // Apply data-width attributes as CSS widths (avoids Jinja2/CSS linter conflicts)
+    document.querySelectorAll('[data-width]').forEach(el => {
+        el.style.width = el.dataset.width + '%';
+    });
+
+    // ── Tab switching ──────────────────────────────────────────
+    let calendarInit = false;
+    const TAB_NAMES = ['today', 'history', 'week', 'calendar'];
+
+    function showTab(tab) {
+        TAB_NAMES.forEach(t => {
+            const elId = t === 'calendar' ? 'calendarTab' : t + 'Tab';
+            const btnId = t === 'calendar' ? 'calTabBtn' : t + 'TabBtn';
+            const el = document.getElementById(elId);
+            const btn = document.getElementById(btnId);
+            if (el) el.style.display = tab === t ? '' : 'none';
+            if (btn) btn.classList.toggle('active', tab === t);
+        });
+        if (tab === 'calendar' && !calendarInit) {
+            calendarInit = true;
+            initCalendar();
+        }
+    }
+
+    // Auto-open tab from URL param
+    (function () {
+        const params = new URLSearchParams(window.location.search);
+        const tab = params.get('tab');
+        if (tab && TAB_NAMES.includes(tab)) showTab(tab);
+    })();
+
+    // ── FullCalendar ───────────────────────────────────────────
+    function initCalendar() {
+        const el = document.getElementById('attendanceCalendar');
+        const calendar = new FullCalendar.Calendar(el, {
+            initialView: 'dayGridMonth',
+            fixedWeekCount: false,
+            contentHeight: 520,
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,dayGridWeek'
+            },
+            events: '/faculty/attendance-calendar',
+            eventClick: function (info) {
+                const props = info.event.extendedProps;
+                const date = info.event.startStr;
+
+                document.getElementById('dayDetailTitle').innerHTML =
+                    `<i class="fas fa-calendar-day me-2 text-info"></i>${formatDate(date)}`;
+                document.getElementById('dayDetailRate').textContent = `${props.rate}%`;
+
+                let html = '<div class="row g-2 mb-3">' +
+                    `<div class="col-6"><div class="card text-center p-3" style="background:rgba(25,135,84,0.2); border-radius:12px;">
+                        <div class="fw-bold text-success fs-4">${props.present}</div>
+                        <small class="text-white-50">Present</small></div></div>` +
+                    `<div class="col-6"><div class="card text-center p-3" style="background:rgba(220,53,69,0.2); border-radius:12px;">
+                        <div class="fw-bold text-danger fs-4">${props.total - props.present}</div>
+                        <small class="text-white-50">Absent</small></div></div>` +
+                    '</div>';
+
+                if (props.classes && props.classes.length) {
+                    html += '<h6 class="text-white-50 small fw-bold mb-2">PERIOD BREAKDOWN</h6>';
+                    props.classes.forEach(cls => {
+                        const pct = cls.total ? Math.round((cls.present / cls.total) * 100) : 0;
+                        const col = pct >= 75 ? '#198754' : pct >= 50 ? '#fd7e14' : '#dc3545';
+                        html += `<div class="d-flex align-items-center justify-content-between mb-2 p-2 rounded-3"
+                                      style="background:rgba(255,255,255,0.05);">
+                            <div>
+                                <div class="fw-bold text-white small">${cls.course}</div>
+                                <div class="text-white-50" style="font-size:0.75rem;">
+                                    <i class="far fa-clock me-1"></i>${cls.time}
+                                </div>
+                            </div>
+                            <span class="badge fw-bold px-3" style="background:${col}; border-radius:20px;">
+                                ${cls.present}/${cls.total}
+                            </span>
+                        </div>`;
+                    });
+                }
+                document.getElementById('dayDetailBody').innerHTML = html;
+                new bootstrap.Modal(document.getElementById('dayDetailModal')).show();
+            }
+        });
+        calendar.render();
+    }
+
+    function formatDate(d) {
+        const dt = new Date(d + 'T00:00:00');
+        return dt.toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    }
+</script>
+{% endblock %}

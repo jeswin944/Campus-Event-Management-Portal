@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+
+{% block title %}Admin: Duty Leave Management{% endblock %}
+{% block body_class %}admin-page-bg{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-md-12 d-flex justify-content-between align-items-center">
+        <div>
+            <h2 class="text-primary"><i class="fas fa-user-check me-2"></i>Manage Duty Leave Requests</h2>
+            <p class="text-muted">Review, assign a period and approve Duty Leave requests for all departments.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('admin.daily_attendance_list') }}" class="btn btn-warning fw-bold shadow-sm">
+                <i class="fas fa-history me-1"></i>View Attendance Records
+            </a>
+            <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-back-theme px-3">
+                <i class="fas fa-arrow-left me-1"></i>Back
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm glass-ui">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Student Details</th>
+                        <th>Event Details</th>
+                        <th>Participation Check</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in requests %}
+                    <tr>
+                        <td>
+                            <div class="fw-bold">{{ req.student_name }}</div>
+                            <small class="text-muted">{{ req.register_number }}</small><br>
+                            <span class="badge bg-secondary">{{ req.department }}</span>
+                            &nbsp;
+                            {% if req.register_number and req.register_number.upper().startswith('NIE23CS') %}
+                            <span class="badge fw-bold"
+                                style="background:linear-gradient(135deg,#4361ee,#7209b7); border-radius:20px; font-size:.65rem;">
+                                <i class="fas fa-star me-1"></i>Student
+                            </span>
+                            {% else %}
+                            <span class="badge fw-bold"
+                                style="background:linear-gradient(135deg,#4cc9f0,#0077b6); color:#000; border-radius:20px; font-size:.65rem;">
+                                <i class="fas fa-globe me-1"></i>Inter_Student
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="fw-bold">{{ req.event_name }}</div>
+                            <small class="d-block text-muted"><i class="far fa-calendar-alt me-1 text-primary"></i>{{ req.event_date }}</small>
+                            <small class="d-block text-muted"><i class="far fa-clock me-1 text-primary"></i>{{ req.start_time }} – {{ req.end_time }}</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-info text-dark mb-1">
+                                <i class="fas fa-check-circle me-1"></i> Verified Present
+                            </span>
+                            <br>
+                            <button type="button" class="badge bg-light text-dark border shadow-sm small border-0 transition-standard" 
+                                    style="cursor: pointer; outline: none; border: 1px solid transparent !important;"
+                                    onmouseover="this.style.borderColor='var(--accent-color)'"
+                                    onmouseout="this.style.borderColor='transparent'"
+                                    data-bs-toggle="popover" 
+                                    data-bs-trigger="click" 
+                                    data-bs-html="true"
+                                    title="Missed Subjects" 
+                                    data-bs-content="{% if req.missed_subjects %}<ul class='list-unstyled mb-0'>{% for sub in req.missed_subjects %}<li class='small'><i class='fas fa-book-open me-2 text-primary'></i>{{ sub }}</li>{% endfor %}</ul>{% else %}None{% endif %}">
+                                <i class="fas fa-clock text-danger me-1"></i> <strong>{{ req.missed_hours|default(0) }}</strong> Missed Classes
+                            </button>
+                        </td>
+                        <td>
+                            {% if req.status == 'Pending' %}
+                            <span class="badge bg-warning text-dark">Pending</span>
+                            {% elif req.status == 'Approved' %}
+                            <span class="badge bg-success">Approved</span>
+                            {% if req.timetable_id %}
+                            <br><small class="text-success"><i class="fas fa-lock me-1"></i>OD Period Set</small>
+                            {% endif %}
+                            {% else %}
+                            <span class="badge bg-danger">Rejected</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if req.status == 'Pending' %}
+                            <!-- Approve → opens modal to pick period -->
+                            <button class="btn btn-sm btn-success approve-od-btn" data-req-id="{{ req.request_id }}"
+                                data-student="{{ req.student_name }}" data-event="{{ req.event_name }}"
+                                data-dept="{{ req.department }}" data-sem="{{ req.semester }}" data-event-date="{{ req.event_date }}"
+                                data-start="{{ req.start_time }}" data-end="{{ req.end_time }}">
+                                <i class="fas fa-check"></i> Approve
+                            </button>
+                            <a href="{{ url_for('admin.approve_onduty', req_id=req.request_id, action='reject') }}"
+                                class="btn btn-sm btn-danger" title="Reject">
+                                <i class="fas fa-times"></i> Reject
+                            </a>
+                            {% else %}
+                            <span class="text-muted small">Processed</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">No pending Duty Leave requests found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Approve OD Modal -->
+<div class="modal fade" id="approveOdModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-ui border-0 shadow-lg">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold text-white">
+                    <i class="fas fa-user-check me-2 text-success"></i>Approve Duty Leave Request
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="" id="approveOdForm">
+                <div class="modal-body">
+                    <div class="mb-3 p-3 rounded-3" style="background:rgba(255,255,255,0.05);">
+                        <p class="text-white mb-1 fw-bold" id="modalStudentName"></p>
+                        <p class="text-white-50 small mb-0" id="modalEventName"></p>
+                        <p class="text-white-50 small mb-0" id="modalEventTime"></p>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-white fw-bold">
+                            <i class="far fa-calendar-alt me-1 text-warning"></i>Duty Leave Date
+                        </label>
+                        <input type="date" name="od_date" id="odDateInput"
+                            class="form-control glass-input text-white border-0" required>
+                        <small class="text-white-50">Date on which the student was Duty Leave (event date).</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-white fw-bold">
+                            <i class="fas fa-chalkboard me-1 text-info"></i>Periods for that Day
+                        </label>
+                        <div id="odTimetableCheckboxes" class="p-2 rounded-3" style="background:rgba(255,255,255,0.05); max-height: 250px; overflow-y: auto;">
+                            <!-- Checkboxes will be injected here -->
+                            <p class="text-white-50 mb-0 py-2">— Pick a date first —</p>
+                        </div>
+                        <div id="odNoSlots" class="mt-2 d-none">
+                            <span class="badge bg-danger px-3 py-2 rounded-3">
+                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                No classes scheduled on that day.
+                            </span>
+                        </div>
+                        <small class="text-white-50 mt-1 d-block">
+                            Only periods for the selected day are shown.
+                            The student will be marked <strong class="text-success">Present</strong>
+                            and faculty <strong class="text-warning">cannot override</strong> this.
+                        </small>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success fw-bold px-4">
+                        <i class="fas fa-check me-1"></i>Approve & Auto-Mark Present
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script type="application/json" id="allSlotsData">
+    [{% for slot in timetable_slots %}{"id":{{ slot.timetable_id }},"day":"{{ slot.day }}","start":"{{ slot.start_time }}","end":"{{ slot.end_time }}","course":"{{ slot.course_name | e }}","dept":"{{ slot.department }}","sem":"{{ slot.semester }}"}{% if not loop.last %},{% endif %}{% endfor %}]
+</script>
+
+<script>
+    // Embed all timetable slots as JSON from server
+    const ALL_SLOTS = JSON.parse(document.getElementById('allSlotsData').textContent);
+
+    const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+    function filterSlotsByDate(dateStr, dept = '', sem = '', eventStart = '', eventEnd = '') {
+        const container = document.getElementById('odTimetableCheckboxes');
+        const noSlots = document.getElementById('odNoSlots');
+        const submitBtn = document.querySelector('#approveOdForm button[type=submit]');
+        container.innerHTML = '';
+
+        if (!dateStr) {
+            container.innerHTML = '<p class="text-white-50 mb-0 py-2">— Pick a date first —</p>';
+            noSlots.classList.add('d-none');
+            submitBtn.disabled = false;
+            return;
+        }
+
+        const dayName = DAY_NAMES[new Date(dateStr + 'T00:00:00').getDay()];
+        // Filter by day, dept, and sem for precision
+        let daySlots = ALL_SLOTS.filter(s => s.day === dayName);
+        if (dept) daySlots = daySlots.filter(s => s.dept === dept);
+        if (sem) daySlots = daySlots.filter(s => s.sem.toString() === sem.toString());
+
+        if (daySlots.length === 0) {
+            container.innerHTML = '<p class="text-white-50 mb-0 py-2">— No classes for this student on ' + dayName + ' —</p>';
+            noSlots.classList.remove('d-none');
+            submitBtn.disabled = true;
+        } else {
+            noSlots.classList.add('d-none');
+            submitBtn.disabled = false;
+
+            // Helper to convert HH:MM to seconds for comparison
+            const toSec = (timeStr) => {
+                const [h, m] = timeStr.split(':').map(Number);
+                return h * 3600 + m * 60;
+            };
+
+            const evStartSec = eventStart ? toSec(eventStart) : null;
+            const evEndSec = eventEnd ? toSec(eventEnd) : null;
+
+            daySlots.forEach((s, idx) => {
+                const div = document.createElement('div');
+                div.className = 'form-check mb-2';
+
+                const isOverlap = (evStartSec !== null && evEndSec !== null) && 
+                                  (Math.max(evStartSec, toSec(s.start)) < Math.min(evEndSec, toSec(s.end)));
+
+                div.innerHTML = `
+                    <input class="form-check-input" type="checkbox" name="timetable_id" value="${s.id}" id="period_${idx}" ${isOverlap ? 'checked' : ''}>
+                    <label class="form-check-label text-white small" for="period_${idx}">
+                        <strong class="text-info">${s.start} – ${s.end}</strong> | ${s.course}
+                    </label>
+                `;
+                container.appendChild(div);
+            });
+        }
+    }
+
+    // When admin clicks Approve, open modal and immediately filter by event date
+    document.querySelectorAll('.approve-od-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const reqId = this.getAttribute('data-req-id');
+            const student = this.getAttribute('data-student');
+            const event = this.getAttribute('data-event');
+            const eventDate = this.getAttribute('data-event-date');
+            const dept = this.getAttribute('data-dept');
+            const sem = this.getAttribute('data-sem');
+            const start = this.getAttribute('data-start');
+            const end = this.getAttribute('data-end');
+
+            document.getElementById('modalStudentName').textContent = student;
+            document.getElementById('modalEventName').textContent = 'Event: ' + event;
+            document.getElementById('modalEventTime').textContent = 'Time: ' + start + ' – ' + end;
+            document.getElementById('odDateInput').value = eventDate;
+            document.getElementById('approveOdForm').action = `/admin/duty-leave/respond/${reqId}/approve`;
+
+            // Store current context for change event
+            document.getElementById('odDateInput').dataset.dept = dept;
+            document.getElementById('odDateInput').dataset.sem = sem;
+            document.getElementById('odDateInput').dataset.start = start;
+            document.getElementById('odDateInput').dataset.end = end;
+
+            // Auto-filter periods to this event's day
+            filterSlotsByDate(eventDate, dept, sem, start, end);
+
+            new bootstrap.Modal(document.getElementById('approveOdModal')).show();
+        });
+    });
+
+    // If admin manually changes the date, re-filter
+    document.getElementById('odDateInput').addEventListener('change', function () {
+        filterSlotsByDate(this.value, this.dataset.dept, this.dataset.sem, this.dataset.start, this.dataset.end);
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // Initialize Popovers with improved options
+        var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'))
+        var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+            return new bootstrap.Popover(popoverTriggerEl, {
+                container: 'body',
+                trigger: 'click' // Explicitly set trigger
+            })
+        });
+    });
+</script>
+{% endblock %}

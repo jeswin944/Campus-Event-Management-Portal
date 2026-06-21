@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}Event Feedbacks{% endblock %}
+{% block body_class %}admin-page-bg{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="mb-0 text-primary"><i class="fas fa-comment-dots me-2"></i>Student Feedbacks</h3>
+        <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-back-theme px-3">
+            <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+        </a>
+    </div>
+
+    {% if feedbacks %}
+    <div class="row">
+        {% for f in feedbacks %}
+        <div class="col-md-6 mb-4">
+            <div class="card glass-panel h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <h5 class="card-title mb-1">{{ f.event_name }}</h5>
+                            <small class="text-muted"><i class="fas fa-user me-1"></i> {{ f.student_name }} ({{
+                                f.department }})</small>
+                        </div>
+                        <div class="badge bg-primary rounded-pill">
+                            {{ f.rating }} <i class="fas fa-star text-warning"></i>
+                        </div>
+                    </div>
+                    <p class="card-text mt-3 fst-italic">"{{ f.comments }}"</p>
+                    <div class="text-end mt-3">
+                        <small class="text-muted">{{ f.created_at }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info text-center py-5">
+        <i class="fas fa-comment-slash fa-3x mb-3 text-muted"></i>
+        <p class="lead text-muted">No feedbacks received yet.</p>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

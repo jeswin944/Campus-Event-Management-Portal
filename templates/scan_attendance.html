@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% block title %}Scan Attendance{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg border-0"
+                style="background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border-radius: 15px;">
+                <div class="card-header bg-success text-white text-center" style="border-radius: 15px 15px 0 0;">
+                    <h4><i class="fas fa-qrcode"></i> Scan Attendance QR</h4>
+                </div>
+                <div class="card-body p-4">
+                    <div id="reader" style="width: 100%; border-radius: 10px; overflow: hidden;"></div>
+                    <div id="result" class="mt-4 text-center">
+                        <div class="alert alert-info">
+                            Ready to scan...
+                        </div>
+                    </div>
+                    <div id="scan-config" 
+                         data-scan-url="{{ url_for('faculty.scan_attendance', event_id=target_event_id) if target_event_id else url_for('faculty.scan_attendance') }}"
+                         data-event-id="{{ target_event_id or '' }}"></div>
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('faculty.faculty_dashboard') }}" class="btn btn-back-theme px-4">
+                            <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Load HTML5-QRCode library -->
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script>
+    // Sound synthesis for successful scan
+    function playBeep() {
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // A5 frequency
+            gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + 0.05);
+            gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2);
+
+            oscillator.start(audioCtx.currentTime);
+            oscillator.stop(audioCtx.currentTime + 0.2);
+        } catch (e) {
+            console.error("Audio context not supported", e);
+        }
+    }
+
+    function onScanSuccess(decodedText, decodedResult) {
+        // Play success beep
+        playBeep();
+
+        // Stop scanning after success
+        html5QrcodeScanner.clear();
+
+        document.getElementById('result').innerHTML = `
+            <div class="alert alert-warning">
+                Processing QR Token: <strong>${decodedText}</strong>...
+            </div>
+        `;
+
+        // Send token to backend
+        const config = document.getElementById('scan-config').dataset;
+        const formData = new FormData();
+        formData.append('qr_token', decodedText);
+        if (config.eventId) {
+            formData.append('event_id', config.eventId);
+        }
+
+        fetch(config.scanUrl, {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.text())
+            .then(data => {
+                if (data.startsWith("Success")) {
+                    document.getElementById('result').innerHTML = `
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i> ${data}
+                    </div>
+                    <button onclick="location.reload()" class="btn btn-primary mt-2">Scan Next</button>
+                `;
+                } else {
+                    document.getElementById('result').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-times-circle"></i> ${data}
+                    </div>
+                    <button onclick="location.reload()" class="btn btn-primary mt-2">Try Again</button>
+                `;
+                }
+            })
+            .catch(err => {
+                document.getElementById('result').innerHTML = `
+                <div class="alert alert-danger">
+                    Error connecting to server.
+                </div>
+                <button onclick="location.reload()" class="btn btn-primary mt-2">Try Again</button>
+            `;
+            });
+    }
+
+    function onScanFailure(error) {
+        // handle scan failure, usually better to ignore and keep scanning
+    }
+
+    let html5QrcodeScanner = new Html5QrcodeScanner(
+        "reader", { fps: 10, qrbox: { width: 250, height: 250 } }, /* verbose= */ false);
+    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+</script>
+{% endblock %}

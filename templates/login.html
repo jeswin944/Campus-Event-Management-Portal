@@ -1,0 +1,449 @@
+{% extends 'base.html' %}
+
+{% block title %}Login | Campus Event Portal{% endblock %}
+{% block body_class %}login-bg{% endblock %}
+
+{% block content %}
+<div class="position-relative overflow-hidden"
+    style="min-height: calc(100vh - 120px); padding: 20px;">
+
+    <!-- Ambient Background -->
+    <div class="floating-shape shape-1" style="top: 15%; left: 15%; opacity: 0.15;"></div>
+    <div class="floating-shape shape-2" style="bottom: 15%; right: 15%; opacity: 0.15;"></div>
+
+    <!-- MAIN CARD -->
+    <div class="login-wrapper glass-panel position-relative d-flex flex-column animate__animated animate__zoomIn mx-auto mt-5 mb-5"
+        style="z-index: 10; max-width: 440px; width: 100%; min-height: 600px; padding: 0; overflow: hidden; border-radius: 24px !important;">
+
+        <!-- HEADER / ROLE SWITCHER -->
+        <div class="d-flex w-100 position-relative p-2"
+            style="background: rgba(255, 255, 255, 0.02); border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+
+            <div class="flex-fill p-3 text-center cursor-pointer role-tab active rounded-4" id="tab-student"
+                onclick="switchRole('student')" style="transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); z-index: 2;">
+                <i class="fas fa-university mb-1 d-block fs-5"></i>
+                <span class="fw-bold small text-uppercase tracking-wider">NIE Student</span>
+            </div>
+
+            <div class="flex-fill p-3 text-center cursor-pointer role-tab rounded-4" id="tab-faculty"
+                onclick="switchRole('faculty')" style="transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); z-index: 2;">
+                <i class="fas fa-chalkboard-teacher mb-1 d-block fs-5"></i>
+                <span class="fw-bold small text-uppercase tracking-wider">Faculty</span>
+            </div>
+
+            <div class="flex-fill p-3 text-center cursor-pointer role-tab rounded-4" id="tab-inter"
+                onclick="switchRole('inter')" style="transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); z-index: 2;">
+                <i class="fas fa-globe mb-1 d-block fs-5"></i>
+                <span class="fw-bold small text-uppercase tracking-wider">Other Student</span>
+            </div>
+
+            <!-- Animated Background Indicator -->
+            <div class="role-indicator position-absolute" id="role-indicator"
+                style="width: calc(33.33% - 10px); height: calc(100% - 16px); background: var(--accent-color); left: 8px; top: 8px; border-radius: 12px; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4); z-index: 1;">
+            </div>
+        </div>
+
+        <!-- BODY CONTENT -->
+        <div class="p-4 p-md-5 flex-fill d-flex flex-column justify-content-center">
+
+            <div class="text-center mb-5">
+                <h2 class="fw-800 mb-2" id="login-title" style="color: var(--text-primary);">Student Portal</h2>
+                <p class="text-secondary" id="login-subtitle">Sign in to manage your campus life</p>
+            </div>
+
+            {% if error %}
+            <div class="alert alert-danger animate__animated animate__shakeX border-0 rounded-4 py-3 mb-4 d-flex align-items-center"
+                style="background: rgba(239, 68, 68, 0.1); color: #ef4444;">
+                <i class="fas fa-circle-exclamation me-3"></i>
+                <span class="small fw-semibold">{{ error }}</span>
+            </div>
+            {% endif %}
+
+            <form method="POST" action="{{ url_for('auth.login') }}">
+                <input type="hidden" name="login_role" id="login_role" value="student">
+
+                <!-- REGISTER NUMBER / EMAIL -->
+                <div class="mb-4">
+                    <label class="form-label text-secondary small fw-bold text-uppercase tracking-widest mb-2 ps-1"
+                        id="label-username">Register Number</label>
+                    <div class="input-group glass-input-group p-1 rounded-4 border border-accent border-opacity-25"
+                        style="background: var(--input-bg);">
+                        <span class="input-group-text bg-transparent border-0 text-secondary px-3">
+                            <i class="fas fa-id-card-alt text-accent" id="user-icon"></i>
+                        </span>
+                        <input type="text" name="username" id="input-username"
+                            class="form-control border-0 bg-transparent py-3 shadow-none fw-semibold"
+                            placeholder="NIE23XXXXX" required style="color: var(--text-primary);">
+                    </div>
+                </div>
+
+                <!-- PASSWORD -->
+                <div class="mb-5">
+                    <div class="d-flex justify-content-between align-items-center mb-2 px-1">
+                        <label
+                            class="form-label text-secondary small fw-bold text-uppercase tracking-widest mb-0">Password</label>
+                        <a href="{{ url_for('auth.forgot_password') }}"
+                            class="small text-accent text-decoration-none fw-semibold">Forgot?</a>
+                    </div>
+                    <div class="input-group glass-input-group p-1 rounded-4 border border-accent border-opacity-25"
+                        style="background: var(--input-bg);">
+                        <span class="input-group-text bg-transparent border-0 text-secondary px-3">
+                            <i class="fas fa-lock text-accent"></i>
+                        </span>
+                        <input type="password" name="password"
+                            class="form-control border-0 bg-transparent py-3 shadow-none fw-semibold"
+                            placeholder="••••••••" required style="color: var(--text-primary);">
+                    </div>
+                </div>
+
+                <div class="d-grid gap-3">
+                    <button type="submit" class="btn btn-primary btn-lg py-3 rounded-4 shadow-xl">
+                        <span class="fw-bold">Sign In to Dashboard</span>
+                        <i class="fas fa-arrow-right ms-2 small opacity-50"></i>
+                    </button>
+
+                    <div class="text-center mt-3" id="register-footer">
+                        {% if not registration_closed %}
+                        <p class="text-secondary small mb-0">New student? <a href="javascript:void(0)"
+                                onclick="openRegister()" class="text-accent text-decoration-none fw-bold">Create
+                                Account</a></p>
+                        {% else %}
+                        <p class="text-secondary small mb-0"><i class="fas fa-lock me-1"></i>New student registration is currently closed.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- SLIDE-UP REGISTRATION PANEL -->
+    <div id="register-panel"
+        class="glass-panel position-fixed start-0 w-100 h-100 d-flex flex-column align-items-center py-5"
+        style="top: 100%; transition: top 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); z-index: 1050; border-radius: 0; background: rgba(5, 5, 10, 0.95); backdrop-filter: blur(20px); overflow-y: auto;">
+
+        <div class="container my-auto pt-4" style="max-width: 450px; padding: 2rem 1rem;">
+
+            <button onclick="closeRegister()"
+                class="btn btn-link text-secondary text-decoration-none position-absolute top-0 end-0 m-4 fs-5 hover-white transition-colors">
+                <i class="fas fa-times me-1"></i> Close
+            </button>
+
+            <div class="text-center mb-5">
+                <h3 class="card-title mb-2 fw-bold fs-2 text-white">Create Account</h3>
+                <p class="text-secondary" id="register-desc">Join the Campus Event Portal</p>
+                <div class="btn-group w-100 mt-3 p-1 rounded-4 glass-panel" style="background: rgba(255,255,255,0.05);">
+                    <input type="radio" class="btn-check" name="student_type" id="type_nie" value="nie" checked
+                        onchange="toggleRegType()">
+                    <label class="btn btn-outline-primary border-0 rounded-3 py-2 fw-bold" for="type_nie">NIE
+                        Student</label>
+                    <input type="radio" class="btn-check" name="student_type" id="type_other" value="other"
+                        onchange="toggleRegType()">
+                    <label class="btn btn-outline-info border-0 rounded-3 py-2 fw-bold" for="type_other">Guest
+                        Student</label>
+                </div>
+            </div>
+
+            <form method="POST" action="{{ url_for('auth.register_user') }}">
+
+                <!-- Forced Student Role -->
+                <input type="hidden" name="role" value="student">
+
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <label class="form-label text-secondary small fw-bold ps-1">Full Name</label>
+                        <div class="input-group glass-input-group rounded-3">
+                            <span class="input-group-text bg-transparent border-0 text-secondary ps-3"><i
+                                    class="fas fa-user"></i></span>
+                            <input type="text" name="name" class="form-control glass-input border-0 shadow-none ps-2"
+                                placeholder="Full Name" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <label class="form-label text-secondary small fw-bold ps-1">Email</label>
+                        <div class="input-group glass-input-group rounded-3">
+                            <span class="input-group-text bg-transparent border-0 text-secondary ps-3"><i
+                                    class="fas fa-envelope"></i></span>
+                            <input type="email" name="email" class="form-control glass-input border-0 shadow-none ps-2"
+                                placeholder="Email Address" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label text-secondary small fw-bold ps-1">Department</label>
+                    <div class="input-group glass-input-group rounded-3">
+                        <span class="input-group-text bg-transparent border-0 text-secondary ps-3"><i
+                                class="fas fa-building"></i></span>
+                        <select name="department" class="form-select glass-input border-0 shadow-none ps-2" required>
+                            <option value="" selected disabled>Select Department</option>
+                            <option value="CSE">Computer Science (CSE)</option>
+                            <option value="IT">Information Technology (IT)</option>
+                            <option value="ECE">Electronics (ECE)</option>
+                            <option value="EEE">Electrical (EEE)</option>
+                            <option value="MECH">Mechanical (MECH)</option>
+                            <option value="CIVIL">Civil (CIVIL)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Student Fields Always Visible -->
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <label class="form-label text-secondary small fw-bold ps-1">Register Number</label>
+                        <div class="input-group glass-input-group rounded-3">
+                            <span class="input-group-text bg-transparent border-0 text-secondary ps-3"><i
+                                    class="fas fa-id-card"></i></span>
+                            <input type="text" name="reg_no" class="form-control glass-input border-0 shadow-none ps-2"
+                                placeholder="Register No" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <label class="form-label text-secondary small fw-bold ps-1">Semester</label>
+                        <div class="input-group glass-input-group rounded-3">
+                            <span class="input-group-text bg-transparent border-0 text-secondary ps-3"><i
+                                    class="fas fa-graduation-cap"></i></span>
+                            <select name="semester" class="form-select glass-input border-0 shadow-none ps-2" required>
+                                <option value="" selected disabled>Sem</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <label class="form-label text-secondary small fw-bold ps-1">Password</label>
+                        <div class="input-group glass-input-group rounded-3">
+                            <span class="input-group-text bg-transparent border-0 text-secondary ps-3"><i
+                                    class="fas fa-lock"></i></span>
+                            <input type="password" name="password"
+                                class="form-control glass-input border-0 shadow-none ps-2" placeholder="Password"
+                                required>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <label class="form-label text-secondary small fw-bold ps-1">Confirm</label>
+                        <div class="input-group glass-input-group rounded-3">
+                            <span class="input-group-text bg-transparent border-0 text-secondary ps-3"><i
+                                    class="fas fa-check-circle"></i></span>
+                            <input type="password" name="confirm_password"
+                                class="form-control glass-input border-0 shadow-none ps-2" placeholder="Confirm"
+                                required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-grid mt-4">
+                    <button type="submit" class="btn btn-success btn-lg shadow-lg fw-bold"
+                        style="background: linear-gradient(135deg, #10b981, #059669); border: none;">
+                        <i class="fas fa-check me-2"></i> Register Student
+                    </button>
+                    <button type="button" onclick="closeRegister()" class="btn btn-link text-secondary mt-3 small">Back
+                        to Login</button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    window.onpageshow = function (event) {
+        if (event.persisted) {
+            window.location.reload();
+        }
+    };
+
+    function switchRole(role) {
+        const indicator = document.getElementById('role-indicator');
+        const tabStudent = document.getElementById('tab-student');
+        const tabInter = document.getElementById('tab-inter');
+        const tabFaculty = document.getElementById('tab-faculty');
+        const footer = document.getElementById('register-footer');
+        const userIcon = document.getElementById('user-icon');
+        const loginRoleInput = document.getElementById('login_role');
+
+        tabStudent.classList.remove('active');
+        tabInter.classList.remove('active');
+        tabFaculty.classList.remove('active');
+
+        if (role === 'student') {
+            loginRoleInput.value = 'student';
+            indicator.style.left = '8px';
+            tabStudent.classList.add('active');
+
+            document.getElementById('login-title').innerText = "NIE Student Portal";
+            document.getElementById('login-subtitle').innerText = "Sign in with your NIE credentials";
+            document.getElementById('label-username').innerText = "Register Number";
+            document.getElementById('input-username').placeholder = "NIE23CSXXX";
+            userIcon.className = "fas fa-id-card-alt text-accent";
+
+            footer.style.display = 'block';
+            setTimeout(() => footer.style.opacity = '1', 10);
+        } else if (role === 'faculty') {
+            loginRoleInput.value = 'faculty';
+            indicator.style.left = 'calc(33.33% + 4px)';
+            tabFaculty.classList.add('active');
+
+            document.getElementById('login-title').innerText = "Faculty Portal";
+            document.getElementById('login-subtitle').innerText = "Manage events and attendance";
+            document.getElementById('label-username').innerText = "Email Address";
+            document.getElementById('input-username').placeholder = "faculty@uceams.edu";
+            userIcon.className = "fas fa-envelope text-accent";
+
+            footer.style.opacity = '0';
+            setTimeout(() => footer.style.display = 'none', 300);
+        } else {
+            loginRoleInput.value = 'student';
+            indicator.style.left = 'calc(66.66% + 4px)';
+            tabInter.classList.add('active');
+
+            document.getElementById('login-title').innerText = "Guest Student Portal";
+            document.getElementById('login-subtitle').innerText = "For students from other institutions";
+            document.getElementById('label-username').innerText = "Student ID / Reg No";
+            document.getElementById('input-username').placeholder = "Your College ID";
+            userIcon.className = "fas fa-globe text-info";
+
+            footer.style.display = 'block';
+            setTimeout(() => footer.style.opacity = '1', 10);
+        }
+    }
+
+    function toggleRegType() {
+        const type = document.querySelector('input[name="student_type"]:checked').value;
+        const regInput = document.getElementsByName('reg_no')[0];
+        const desc = document.getElementById('register-desc');
+
+        if (type === 'nie') {
+            regInput.placeholder = "NIE23CSXXX";
+            desc.innerText = "Register as an NIE Institution student";
+            desc.className = "text-secondary";
+        } else {
+            regInput.placeholder = "Inter-College ID";
+            desc.innerText = "Register as an Inter-Collegiate participant";
+            desc.className = "text-info fw-bold";
+        }
+    }
+
+    // REGISTRATION UI
+    function openRegister() {
+        document.getElementById('register-panel').style.top = '0';
+    }
+
+    function closeRegister() {
+        document.getElementById('register-panel').style.top = '100%';
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // Check URL parameters for tab selection
+        const urlParams = new URLSearchParams(window.location.search);
+        const requestedTab = urlParams.get('tab');
+        if (requestedTab) {
+            switchRole(requestedTab);
+        }
+
+        // Check for backend flag
+        const showRegister = "{{ show_register|default(false)|tojson }}" === "true";
+        if (showRegister) {
+            setTimeout(openRegister, 100);
+        }
+    });
+</script>
+
+<style>
+    /* Styling for glass inputs */
+    .glass-input-group {
+        background: rgba(15, 23, 42, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        transition: all 0.3s ease;
+    }
+
+    .glass-input-group:focus-within {
+        background: rgba(15, 23, 42, 0.6);
+        border-color: var(--accent-color) !important;
+        box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+    }
+
+    .text-accent-muted {
+        color: rgba(139, 92, 246, 0.6);
+        transition: color 0.3s;
+    }
+
+    .glass-input-group:focus-within .text-accent-muted {
+        color: var(--accent-color);
+    }
+
+    /* Role Tabs */
+    .role-tab {
+        color: var(--text-secondary);
+        opacity: 0.6;
+    }
+
+    .role-tab.active {
+        color: #fff; /* Always white because the indicator background is solid primary */
+        opacity: 1;
+    }
+
+    [data-bs-theme="light"] .role-tab:not(.active) {
+        color: var(--text-secondary);
+    }
+
+    .role-tab:hover:not(.active) {
+        background: var(--glass-highlight);
+    }
+
+    /* Registration Input Input Override */
+    .glass-input {
+        background: transparent !important;
+        color: var(--text-primary) !important;
+    }
+
+    /* Remove default form-control borders since we handle it in input-group */
+    .form-control:focus,
+    .form-select:focus {
+        box-shadow: none !important;
+        border-color: transparent !important;
+    }
+
+    /* Auto-fill fix for themes */
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus,
+    input:-webkit-autofill:active {
+        -webkit-box-shadow: 0 0 0 30px var(--secondary-bg) inset !important;
+        -webkit-text-fill-color: var(--text-primary) !important;
+        transition: background-color 5000s ease-in-out 0s;
+    }
+
+    .hover-white:hover {
+        color: var(--text-primary) !important;
+    }
+
+    [data-bs-theme="dark"] .hover-white:hover {
+        color: white !important;
+    }
+
+    .hover-border-accent:hover {
+        border-color: var(--accent-color) !important;
+        color: var(--accent-color) !important;
+    }
+
+    .letter-spacing-1 {
+        letter-spacing: 1px;
+    }
+
+    .drop-shadow-sm {
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,332 @@
+{% extends 'base.html' %}
+{% block title %}Mark Attendance – {{ slot.course_name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h3 class="fw-bold text-white mb-0">
+                <i class="fas fa-user-check me-2 text-warning"></i>Mark Attendance
+            </h3>
+            <small class="text-white-50">
+                {{ slot.course_name }} &nbsp;|&nbsp;
+                {{ slot.department }} Sem {{ slot.semester }} &nbsp;|&nbsp;
+                {{ slot.day }}
+            </small>
+        </div>
+        <a href="{{ url_for('faculty.daily_attendance_overview') }}" class="btn btn-back-theme px-3">
+            <i class="fas fa-arrow-left me-1"></i>Back
+        </a>
+    </div>
+
+    <!-- Info Card -->
+    <div class="card glass-panel border-0 shadow-sm p-4 mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-9">
+                <h4 class="text-white fw-bold mb-1">{{ slot.course_name }}</h4>
+                <p class="text-white-50 mb-0">
+                    <i class="fas fa-building me-1"></i>{{ slot.department }}
+                    &nbsp;|&nbsp;
+                    <i class="fas fa-graduation-cap me-1"></i>Semester {{ slot.semester }}
+                    &nbsp;|&nbsp;
+                    <i class="far fa-clock me-1 text-info"></i>{{ slot.start_time|fmt_time }} – {{
+                    slot.end_time|fmt_time }}
+                    &nbsp;|&nbsp;
+                    <i class="fas fa-door-open me-1"></i>{{ slot.classroom or 'No Room' }}
+                </p>
+            </div>
+            <div class="col-md-3 text-md-end mt-3 mt-md-0">
+                <div
+                    class="bg-primary bg-opacity-10 p-3 rounded-3 d-inline-block text-center border border-primary border-opacity-25">
+                    <h6 class="text-primary small mb-1 fw-bold">Session Date</h6>
+                    <h5 class="text-white fw-bold mb-0">{{ today_date }}</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card glass-panel border-0 shadow-sm p-3 text-center">
+                <div class="fw-bold text-info fs-4">{{ students|length }}</div>
+                <small class="text-white-50">Total Students</small>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card glass-panel border-0 shadow-sm p-3 text-center">
+                <div class="fw-bold text-success fs-4" id="presentCount">0</div>
+                <small class="text-white-50">Present</small>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card glass-panel border-0 shadow-sm p-3 text-center">
+                <div class="fw-bold text-danger fs-4" id="absentCount">{{ students|length }}</div>
+                <small class="text-white-50">Absent</small>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card glass-panel border-0 shadow-sm p-3 text-center">
+                <div class="fw-bold text-warning fs-4" id="attendanceRate">0%</div>
+                <small class="text-white-50">Rate</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Picker + Progress -->
+    <div class="card glass-panel border-0 shadow-sm p-3 mb-4">
+        <div class="row align-items-center g-3">
+            <div class="col-md-4">
+                <form id="dateForm" method="GET" class="w-100">
+                    <label class="text-white-50 small fw-bold mb-1 d-block">
+                        <i class="far fa-calendar me-1"></i>Attendance Date
+                    </label>
+                    <input type="date" name="date" value="{{ today_date }}"
+                        class="form-control glass-input text-white fw-bold border-0" onchange="this.form.submit()">
+                </form>
+            </div>
+            <div class="col-md-8">
+                <label class="text-white-50 small fw-bold mb-1 d-block">
+                    <i class="fas fa-chart-bar me-1"></i>Attendance Progress
+                </label>
+                <div class="progress" style="height: 12px; background: rgba(255,255,255,0.1); border-radius: 8px;">
+                    <div id="progressBar" class="progress-bar bg-success" role="progressbar"
+                        style="width: 0%; border-radius: 8px; transition: width 0.4s ease;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Form -->
+    <form method="POST" id="attendanceForm" data-total="{{ students|length }}">
+        <input type="hidden" name="attendance_date" value="{{ today_date }}">
+
+        <!-- Toolbar -->
+        <div class="card glass-panel border-0 shadow-sm mb-3 p-3">
+            <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between">
+                <!-- Search -->
+                <div class="input-group" style="max-width:320px;">
+                    <span class="input-group-text bg-transparent border-white border-opacity-25 text-white">
+                        <i class="fas fa-search"></i>
+                    </span>
+                    <input type="text" id="studentSearch"
+                        class="form-control glass-input text-white border-white border-opacity-25"
+                        placeholder="Search name / reg no…" oninput="filterStudents()">
+                </div>
+                <!-- Bulk Actions -->
+                <div class="d-flex gap-2 flex-wrap">
+                    <button type="button" class="btn btn-success fw-bold px-3" onclick="markAll(true)">
+                        <i class="fas fa-check-double me-1"></i>All Present
+                    </button>
+                    <button type="button" class="btn btn-danger fw-bold px-3" onclick="markAll(false)">
+                        <i class="fas fa-times me-1"></i>All Absent
+                    </button>
+                    <button type="button" class="btn btn-outline-light fw-bold px-3" onclick="flipAbsent()">
+                        <i class="fas fa-exchange-alt me-1"></i>Flip Absent
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Student Table -->
+        <div class="card glass-panel border-0 shadow-lg overflow-hidden mb-4">
+            <div
+                class="card-header bg-white bg-opacity-10 border-0 p-3 d-flex justify-content-between align-items-center">
+                <h5 class="text-white mb-0">
+                    <i class="fas fa-users me-2 text-info"></i>Student List
+                </h5>
+                <div class="text-end">
+                    <span class="badge bg-success me-2">Toggle ON = Present</span>
+                    <span class="badge bg-danger">Toggle OFF = Absent</span>
+                </div>
+            </div>
+
+            <div class="card-body p-0">
+                {% if students %}
+                <div class="table-responsive">
+                    <table class="table table-hover text-white align-middle mb-0" id="studentTable">
+                        <thead class="table-dark bg-transparent">
+                            <tr>
+                                <th style="width:50px;" class="ps-4">#</th>
+                                <th>Student Name</th>
+                                <th>Register Number</th>
+                                <th>Type</th>
+                                <th class="text-center" style="width:160px;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student in students %}
+                            {% set is_od = student.student_id in od_student_ids %}
+                            <tr class="student-row {% if is_od %}table-warning bg-opacity-10{% endif %}"
+                                data-name="{{ student.name|lower }}" data-reg="{{ student.register_number|lower }}">
+                                <td class="ps-4 text-white-50 small">{{ loop.index }}</td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle bg-info bg-opacity-25 d-flex align-items-center justify-content-center me-3 fw-bold text-white"
+                                            style="width:36px; height:36px; font-size:0.95rem; flex-shrink:0;">
+                                            {{ student.name[0].upper() }}
+                                        </div>
+                                        <div>
+                                            <span class="fw-bold">{{ student.name }}</span>
+                                            {% if is_od %}
+                                            <span class="badge ms-2 fw-bold"
+                                                style="background:linear-gradient(135deg,#f9c74f,#f3722c); border-radius:20px; font-size:.65rem;"
+                                                title="Duty Leave approved — attendance locked">
+                                                <i class="fas fa-lock me-1"></i>Duty Leave
+                                            </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><code class="text-info">{{ student.register_number }}</code></td>
+                                <td>
+                                    {% if student.register_number and
+                                    student.register_number.upper().startswith('NIE23CS') %}
+                                    <span class="badge fw-bold"
+                                        style="background:linear-gradient(135deg,#4361ee,#7209b7); border-radius:20px; font-size:.7rem;">
+                                        <i class="fas fa-star me-1"></i>Student
+                                    </span>
+                                    {% else %}
+                                    <span class="badge fw-bold"
+                                        style="background:linear-gradient(135deg,#4cc9f0,#0077b6); color:#000; border-radius:20px; font-size:.7rem;">
+                                        <i class="fas fa-globe me-1"></i>Inter_Student
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if is_od %}
+                                    <!-- OD locked: always Present, non-interactive -->
+                                    <div class="d-flex align-items-center justify-content-center gap-2">
+                                        <input type="checkbox" name="students" value="{{ student.student_id }}" checked
+                                            disabled class="form-check-input"
+                                            style="width:2.4em; height:1.3em; opacity:0.6; cursor:not-allowed;">
+                                        <span class="text-warning fw-bold small">
+                                            <i class="fas fa-lock me-1"></i>OD Present
+                                        </span>
+                                    </div>
+                                    {% else %}
+                                    <div
+                                        class="form-check form-switch d-flex align-items-center justify-content-center gap-2 mb-0">
+                                        <input class="form-check-input student-check" type="checkbox" name="students"
+                                            value="{{ student.student_id }}" id="s_{{ student.student_id }}" {% if
+                                            existing_attendance.get(student.student_id)=='Present' %}checked{% endif %}
+                                            onchange="updateCounts()"
+                                            style="width:2.4em; height:1.3em; cursor:pointer;">
+                                        <label class="form-check-label status-label text-white-50 small fw-bold"
+                                            for="s_{{ student.student_id }}" id="lbl_{{ student.student_id }}">
+                                            {% if existing_attendance.get(student.student_id) == 'Present' %}
+                                            <span class="text-success">Present</span>
+                                            {% else %}
+                                            <span class="text-danger">Absent</span>
+                                            {% endif %}
+                                        </label>
+                                    </div>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-users fa-3x text-white-50 opacity-25 mb-3 d-block"></i>
+                    <p class="text-white-50">No students found for {{ slot.department }} Sem {{ slot.semester }}.</p>
+                </div>
+                {% endif %}
+            </div>
+
+            {% if students %}
+            <div class="card-footer bg-white bg-opacity-10 border-0 p-4 text-center">
+                <button type="submit" class="btn btn-warning btn-lg px-5 fw-bold shadow-lg" style="border-radius:14px;">
+                    <i class="fas fa-save me-2"></i>Save Attendance
+                    &nbsp;<span class="badge bg-dark" id="saveSummary">0 Present / {{ students|length }} Total</span>
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </form>
+
+</div>
+
+<style>
+    .form-switch .form-check-input {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba%28255,255,255,0.8%29'/%3e%3c/svg%3e");
+        background-color: rgba(220, 53, 69, 0.7);
+        border-color: rgba(220, 53, 69, 0.5);
+        transition: background-color 0.25s ease;
+    }
+
+    .form-switch .form-check-input:checked {
+        background-color: rgba(25, 135, 84, 0.85);
+        border-color: rgba(25, 135, 84, 0.6);
+    }
+
+    .student-row.hidden {
+        display: none !important;
+    }
+
+    .table-hover tbody tr:hover {
+        background: rgba(255, 255, 255, 0.05) !important;
+    }
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const totalStudents = parseInt(document.getElementById('attendanceForm').dataset.total, 10);
+
+    function updateCounts() {
+        const checks = document.querySelectorAll('.student-check');
+        let present = 0;
+        checks.forEach(c => {
+            const lbl = document.getElementById('lbl_' + c.value);
+            if (c.checked) {
+                present++;
+                if (lbl) lbl.innerHTML = '<span class="text-success">Present</span>';
+            } else {
+                if (lbl) lbl.innerHTML = '<span class="text-danger">Absent</span>';
+            }
+        });
+        const absent = totalStudents - present;
+        const rate = totalStudents > 0 ? Math.round((present / totalStudents) * 100) : 0;
+
+        document.getElementById('presentCount').textContent = present;
+        document.getElementById('absentCount').textContent = absent;
+        document.getElementById('attendanceRate').textContent = rate + '%';
+        document.getElementById('saveSummary').textContent = `${present} Present / ${totalStudents} Total`;
+
+        const bar = document.getElementById('progressBar');
+        bar.style.width = rate + '%';
+        bar.className = 'progress-bar ' + (rate >= 75 ? 'bg-success' : rate >= 50 ? 'bg-warning' : 'bg-danger');
+    }
+
+    function markAll(present) {
+        document.querySelectorAll('.student-row:not(.hidden) .student-check').forEach(c => {
+            c.checked = present;
+        });
+        updateCounts();
+    }
+
+    function flipAbsent() {
+        document.querySelectorAll('.student-row:not(.hidden) .student-check').forEach(c => {
+            c.checked = !c.checked;
+        });
+        updateCounts();
+    }
+
+    function filterStudents() {
+        const q = document.getElementById('studentSearch').value.toLowerCase().trim();
+        document.querySelectorAll('.student-row').forEach(row => {
+            const name = row.dataset.name;
+            const reg = row.dataset.reg;
+            row.classList.toggle('hidden', q.length > 0 && !name.includes(q) && !reg.includes(q));
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', updateCounts);
+</script>
+{% endblock %}

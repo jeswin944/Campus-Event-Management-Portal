@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - View Attendance Detail{% endblock %}
+{% block body_class %}admin-page-bg{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-bold mb-0" style="color: var(--text-primary);">
+            <i class="fas fa-edit me-2 text-info"></i>Attendance Detail
+        </h3>
+        <div class="d-flex gap-2">
+            <button class="btn btn-danger fw-bold" id="deleteAttPageBtn">
+                <i class="fas fa-trash me-1"></i>Delete Attendance
+            </button>
+            <a href="{{ url_for('admin.daily_attendance_list') }}" class="btn btn-back-theme px-3">
+                <i class="fas fa-arrow-left me-1"></i>Back to List
+            </a>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteAttPageModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content glass-ui text-center p-4 border-0">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <i class="fas fa-exclamation-triangle fa-5x text-warning"></i>
+                    </div>
+                    <h4 class="mt-3 fw-bold text-danger">Delete Attendance?</h4>
+                    <p class="text-white-50 mb-1">This will permanently delete all attendance records for:</p>
+                    <p class="fw-bold text-white mb-4">{{ slot.course_name }} &ndash; {{ date }}</p>
+                    <div class="d-flex justify-content-center gap-3">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <a href="{{ url_for('admin.delete_attendance', timetable_id=slot.timetable_id, date=date) }}"
+                            class="btn btn-danger fw-bold">
+                            <i class="fas fa-trash me-1"></i>Delete
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Card -->
+    <div class="card glass-panel border-0 shadow-sm p-4 mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-9">
+                <h4 class="fw-bold mb-1" style="color: var(--text-primary);">{{ slot.course_name }}</h4>
+                <p class="text-secondary mb-0">
+                    <i class="fas fa-user-tie me-1"></i>Faculty: {{ slot.faculty_name }} |
+                    <i class="fas fa-building me-1"></i>{{ slot.department }} |
+                    <i class="fas fa-graduation-cap me-1"></i>{{ slot.semester }} Sem
+                </p>
+                <p class="text-secondary small mb-0 mt-2">
+                    <i class="far fa-clock me-1 text-info"></i>Slot: {{ slot.start_time }} - {{ slot.end_time }}
+                </p>
+            </div>
+            <div class="col-md-3 text-md-end mt-3 mt-md-0">
+                <div
+                    class="bg-primary bg-opacity-10 p-3 rounded-3 d-inline-block text-center border border-primary border-opacity-25">
+                    <h6 class="text-primary small mb-1 fw-bold">Session Date</h6>
+                    <h5 class="text-white fw-bold mb-0">{{ date }}</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form method="POST" action="{{ url_for('admin.edit_attendance', timetable_id=slot.timetable_id, date=date) }}">
+        <div class="card glass-panel border-0 shadow-lg overflow-hidden">
+            <div
+                class="card-header bg-white bg-opacity-10 border-0 p-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0" style="color: var(--text-primary);">Recorded Students</h5>
+                <div class="text-end">
+                    <span class="badge bg-success me-2">Checked = Present</span>
+                    <span class="badge bg-danger">Unchecked = Absent</span>
+                </div>
+            </div>
+
+            <div class="card-body p-0">
+                {% if students %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" style="color: var(--text-primary);">
+                        <thead class="table-dark bg-transparent">
+                            <tr>
+                                <th style="width: 50px;" class="ps-4">#</th>
+                                <th>Student Name</th>
+                                <th>Register Number</th>
+                                <th>Type</th>
+                                <th class="text-center" style="width: 150px;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student in students %}
+                            <tr>
+                                <td class="ps-4 text-secondary small">{{ loop.index }}</td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle bg-info bg-opacity-25 p-2 me-3 text-center"
+                                            style="width: 35px; height: 35px; line-height: 20px;">
+                                            {{ student.name[0].upper() }}
+                                        </div>
+                                        <span class="fw-bold">{{ student.name }}</span>
+                                    </div>
+                                </td>
+                                <td><code class="text-info">{{ student.register_number }}</code></td>
+                                <td>
+                                    {% if student.register_number and
+                                    student.register_number.upper().startswith('NIE23CS') %}
+                                    <span class="badge fw-bold"
+                                        style="background:linear-gradient(135deg,#4361ee,#7209b7); border-radius:20px; font-size:.7rem;">
+                                        <i class="fas fa-star me-1"></i>Student
+                                    </span>
+                                    {% else %}
+                                    <span class="badge fw-bold"
+                                        style="background:linear-gradient(135deg,#4cc9f0,#0077b6); color:#000; border-radius:20px; font-size:.7rem;">
+                                        <i class="fas fa-globe me-1"></i>Inter_Student
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <div class="form-check form-switch d-inline-block">
+                                        <input class="form-check-input" type="checkbox" name="students"
+                                            value="{{ student.student_id }}" id="s_{{ student.student_id }}" {% if
+                                            student.status=='Present' %}checked{% endif %}>
+                                        <label class="form-check-label text-secondary small"
+                                            for="s_{{ student.student_id }}">
+                                            Present
+                                        </label>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <p class="text-secondary">No students recorded for this session.</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="card-footer bg-white bg-opacity-10 border-0 p-4 text-center">
+                <button type="submit" class="btn btn-warning btn-lg px-5 fw-bold shadow-lg">
+                    <i class="fas fa-save me-2"></i>Save Corrections
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    document.getElementById('deleteAttPageBtn').addEventListener('click', function () {
+        new bootstrap.Modal(document.getElementById('deleteAttPageModal')).show();
+    });
+</script>
+{% endblock %}

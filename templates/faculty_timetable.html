@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}Faculty Timetable | Eventora{% endblock %}
+
+{% block content %}
+<style>
+    .timetable-container {
+        background: var(--glass-bg);
+        color: var(--text-primary);
+        padding: 40px;
+        border-radius: 15px;
+        box-shadow: var(--card-shadow);
+        font-family: 'Times New Roman', serif;
+        border: 1px solid var(--glass-border) !important;
+        backdrop-filter: blur(16px);
+    }
+
+    .grid-table {
+        border: 2px solid var(--text-primary) !important;
+        margin-bottom: 30px;
+        background: transparent;
+    }
+
+    .grid-table th,
+    .grid-table td {
+        border: 1px solid var(--glass-border) !important;
+        padding: 8px !important;
+        vertical-align: middle;
+        text-align: center;
+        font-size: 14px;
+        color: var(--text-primary);
+    }
+
+    .grid-table .day-col {
+        font-weight: bold;
+        background: var(--glass-highlight);
+        width: 100px;
+    }
+
+    .period-header {
+        background: var(--glass-highlight);
+        font-weight: bold;
+    }
+
+    .vertical-label {
+        writing-mode: vertical-rl;
+        transform: rotate(180deg);
+        white-space: nowrap;
+        background: var(--secondary-bg) !important;
+        font-weight: bold;
+        font-size: 12px;
+        color: var(--text-secondary);
+        padding: 10px 4px !important;
+        width: 40px;
+        border: 1px solid var(--glass-border) !important;
+    }
+
+    .course-badge {
+        font-weight: bold;
+        color: #fff;
+        background-color: var(--accent-color);
+        padding: 2px 5px;
+        border-radius: 4px;
+        display: block;
+        margin-bottom: 4px;
+    }
+
+    .dept-sem {
+        font-size: 11px;
+        color: var(--text-muted);
+        font-weight: bold;
+    }
+
+    .ref-table {
+        border: 1px solid #000 !important;
+        width: 100%;
+        margin-top: 20px;
+    }
+
+    .ref-table th,
+    .ref-table td {
+        border: 1px solid #000 !important;
+        padding: 5px 10px !important;
+        font-size: 12px;
+    }
+
+    @media print {
+
+        .navbar,
+        .btn-print,
+        footer {
+            display: none !important;
+        }
+
+        .timetable-container {
+            box-shadow: none;
+            padding: 0;
+            background: #fff !important;
+            color: #000 !important;
+        }
+
+        .grid-table {
+            border: 2px solid #000 !important;
+            color: #000 !important;
+        }
+
+        .grid-table th,
+        .grid-table td {
+            border: 1px solid #000 !important;
+            color: #000 !important;
+        }
+
+        .vertical-label {
+            background: #f1f1f1 !important;
+            color: #000 !important;
+            border: 1px solid #000 !important;
+        }
+
+        .course-badge {
+            background: #eee !important;
+            color: #000 !important;
+            border: 1px solid #000;
+        }
+
+        .dept-sem {
+            color: #333 !important;
+        }
+
+        body {
+            background: #fff !important;
+        }
+    }
+</style>
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+            <label class="fw-bold text-secondary mb-0"><i class="fas fa-filter me-1"></i> Filter Day:</label>
+            <select id="dayFilter" class="form-select form-select-sm shadow-sm" style="width: 150px;"
+                onchange="filterTimetable()">
+                <option value="all">All Days</option>
+                <option value="Monday">Monday</option>
+                <option value="Tuesday">Tuesday</option>
+                <option value="Wednesday">Wednesday</option>
+                <option value="Thursday">Thursday</option>
+                <option value="Friday">Friday</option>
+                <option value="Saturday">Saturday</option>
+            </select>
+        </div>
+        <button class="btn btn-dark fw-bold btn-print" onclick="window.print()">
+            <i class="fas fa-print me-2"></i>Print My Schedule
+        </button>
+    </div>
+
+    <div class="timetable-container animate__animated animate__fadeIn">
+        <h4 class="text-center mb-4 fw-bold text-uppercase">Academic Faculty Schedule - {{ faculty.name }}</h4>
+
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered align-middle glass-table" id="facultyTimetable">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 15%;">Day</th>
+                        <th style="width: 15%;">Time</th>
+                        <th>Course / Class</th>
+                        <th>Dept / Sem</th>
+                        <th>Room</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for slot in timetable %}
+                    <tr data-day="{{ slot.day }}">
+                        <td class="fw-bold text-secondary">{{ slot.day }}</td>
+                        <td>
+                            <span class="badge bg-light text-dark border shadow-sm">
+                                {{ slot.start_time|fmt_time }} – {{ slot.end_time|fmt_time }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if slot.course_id %}
+                            <div class="fw-bold">{{ slot.course_name }}</div>
+                            {% else %}
+                            <span class="badge bg-danger text-uppercase px-3 py-2">
+                                <i class="fas fa-mug-hot me-1"></i> BREAK / INTERVAL
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="text-secondary">
+                            {% if slot.course_id %}
+                            <span class="badge bg-info text-white">{{ slot.department or '---' }}</span>
+                            <span class="badge bg-dark mt-1">Sem {{ slot.semester or '?' }}</span>
+                            {% else %}
+                            ---
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-dark border">{{ slot.classroom or 'N/A' }}</span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5 text-muted">You have no classes assigned in the master
+                            timetable.</td>
+                    </tr>
+                    {% endfor %}
+                    <tr id="noResultsRow" style="display: none;">
+                        <td colspan="5" class="text-center py-5 text-muted">No classes scheduled for the selected day.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    function filterTimetable() {
+        const selectedDay = document.getElementById('dayFilter').value;
+        const rows = document.querySelectorAll('#facultyTimetable tbody tr[data-day]');
+        const noResults = document.getElementById('noResultsRow');
+        let hasResults = false;
+
+        rows.forEach(row => {
+            if (selectedDay === 'all' || row.dataset.day === selectedDay) {
+                row.style.display = '';
+                hasResults = true;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        noResults.style.display = hasResults ? 'none' : '';
+    }
+</script>
+{% endblock %}

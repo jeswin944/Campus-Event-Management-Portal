@@ -1,0 +1,496 @@
+{% extends "base.html" %}
+
+{% block title %}Events{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-5 animate__animated animate__fadeIn">
+    <div>
+        <h2 class="fw-800 mb-1">Campus Events</h2>
+        <p class="text-secondary mb-0">Discover and participate in upcoming university activities</p>
+    </div>
+    {% if session.get('is_admin') %}
+    <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i> Create Event
+    </a>
+    {% endif %}
+</div>
+
+{% if events %}
+<div class="row g-4 animate__animated animate__fadeInUp">
+    {% for event in events %}
+    <div class="col-12 col-lg-6">
+        <div class="card glass-panel h-100 border-0 shadow-lg overflow-hidden transition-hover">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <div class="d-flex flex-wrap gap-2">
+                        <span
+                            class="badge rounded-pill {% if event.status == 'Open' %}bg-success{% else %}bg-secondary{% endif %} bg-opacity-10 {% if event.status == 'Open' %}text-success{% else %}text-secondary{% endif %} px-3 py-2 fw-semibold">
+                            <i
+                                class="fas {% if event.status == 'Open' %}fa-unlock{% else %}fa-lock{% endif %} me-1 small"></i>
+                            {{ event.status }}
+                        </span>
+
+                        {% if event.department and event.department != 'All' %}
+                        <span class="badge rounded-pill bg-info text-white px-3 py-2 fw-semibold">
+                            <i class="fas fa-crosshairs me-1 small"></i> {{ event.department }} Only
+                        </span>
+                        {% endif %}
+
+                        {% if session.get('user_id') and event.is_recommended %}
+                        <span class="badge rounded-pill bg-warning text-dark px-3 py-2 fw-semibold shadow-sm animate__animated animate__pulse animate__infinite">
+                            <i class="fas fa-star me-1 small"></i> Recommended
+                        </span>
+                        {% endif %}
+
+                        {% if not session.get('user_id') and event.is_trending %}
+                        <span class="badge rounded-pill bg-danger text-white px-3 py-2 fw-semibold shadow-sm">
+                            <i class="fas fa-fire me-1 small"></i> Trending
+                        </span>
+                        {% endif %}
+
+                        {% if event.is_upcoming %}
+                        <span class="badge rounded-pill bg-primary text-white px-3 py-2 fw-semibold shadow-sm">
+                            <i class="fas fa-calendar-alt me-1 small"></i> Upcoming
+                        </span>
+                        {% endif %}
+                    </div>
+                    <div class="text-end">
+                        <h6 class="text-accent mb-0 fw-bold"><i class="fas fa-calendar-day me-2"></i>{{ event.event_date
+                            }}</h6>
+                    </div>
+                </div>
+
+                <h4 class="fw-bold mb-3">{{ event.event_name }}</h4>
+                <p class="text-secondary small mb-4"
+                    style="display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                    {{ event.description }}
+                </p>
+
+                <div class="d-flex align-items-center mb-2 text-primary fw-bold small">
+                    <i class="fas fa-clock me-2"></i>
+                    {% if event.start_time_display %}
+                        {{ event.start_time_display }} – {{ event.end_time_display }}
+                    {% else %}
+                        Timing TBD
+                    {% endif %}
+                </div>
+
+                <div class="d-flex align-items-center mb-4 text-secondary small">
+                    <div class="me-4"><i class="fas fa-map-marker-alt text-accent me-2"></i>{{ event.location }}</div>
+                    {% if event.coordinator_name %}
+                    <div><i class="fas fa-user-tie text-accent me-2"></i>{{ event.coordinator_name }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="d-flex gap-2 mt-auto">
+                    {% if session.get('role') == 'faculty' %}
+                    <a href="{{ url_for('faculty.scan_attendance') }}" class="btn btn-warning flex-fill py-2">
+                        <i class="fas fa-qrcode me-2"></i> Scan Attendance
+                    </a>
+                    {% if session.get('is_admin') %}
+                    <button type="button" class="btn btn-outline-primary px-3" data-bs-toggle="modal"
+                        data-bs-target="#editEventModal" data-event-id="{{ event.event_id }}"
+                        data-event-name="{{ event.event_name }}" data-event-date="{{ event.event_date }}"
+                        data-location="{{ event.location }}" data-description="{{ event.description }}"
+                        data-coordinator-id="{{ event.coordinator_id }}"
+                        data-event-type="{{ event.event_type }}" data-points="{{ event.points_awarded }}"
+                        data-department="{{ event.department }}" 
+                        data-duration="{{ event.duration or '1 Day' }}"
+                        data-end-date="{{ event.event_end_date }}"
+                        data-start-time="{{ event.start_time }}"
+                        data-end-time="{{ event.end_time }}">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    {% if event.is_announced %}
+                    <a href="{{ url_for('admin.toggle_event_status', event_id=event.event_id, new_status='Closed' if event.status == 'Open' else 'Open') }}"
+                        class="btn {% if event.status == 'Open' %}btn-secondary{% else %}btn-success{% endif %} px-3"
+                        title="{% if event.status == 'Open' %}Temporarily Close Event{% else %}Reopen Event{% endif %}">
+                        <i class="fas {% if event.status == 'Open' %}fa-lock{% else %}fa-unlock{% endif %}"></i>
+                    </a>
+                    <button class="btn btn-success px-3" disabled title="Already Announced">
+                        <i class="fas fa-bullhorn"></i>
+                    </button>
+                    {% else %}
+                    <a href="{{ url_for('admin.announce_event', event_id=event.event_id) }}"
+                        class="btn btn-warning px-3 announce-btn" title="Announce to Students & Faculty"
+                        data-confirm="Announce this event to all students and faculty?"
+                        data-confirm-title="Confirm Announcement"
+                        data-confirm-btn="Send Announcement"
+                        data-confirm-icon="announce">
+                        <i class="fas fa-bullhorn"></i>
+                    </a>
+                    {% endif %}
+                    <button type="button" class="btn btn-outline-danger px-3" data-bs-toggle="modal"
+                        data-bs-target="#deleteEventModal" data-event-id="{{ event.event_id }}"
+                        data-event-name="{{ event.event_name }}">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                    {% endif %}
+                    {% elif session.get('role') == 'student' %}
+                    {% if event.status == 'Closed' %}
+                    <button class="btn btn-secondary flex-fill py-2" disabled>
+                        <i class="fas fa-ban me-2"></i> Registration Closed
+                    </button>
+                    {% elif event.deadline_passed %}
+                    <button class="btn btn-danger flex-fill py-2" disabled>
+                        <i class="fas fa-clock me-2"></i> Deadline Passed
+                    </button>
+                    {% elif event.is_registered %}
+                    <button class="btn btn-success flex-fill py-2" disabled>
+                        <i class="fas fa-check-circle me-2"></i> Registered Successfully
+                    </button>
+                    {% elif event.is_waitlisted %}
+                    <button class="btn btn-warning flex-fill py-2 text-dark" disabled>
+                        <i class="fas fa-clock me-2"></i> Waitlisted
+                    </button>
+                    {% else %}
+                    <button type="button" class="btn btn-primary flex-fill py-2" data-bs-toggle="modal"
+                        data-bs-target="#eventRegisterModal" data-event-id="{{ event.event_id }}"
+                        data-event-name="{{ event.event_name }}">
+                        <i class="fas fa-plus-circle me-2"></i> Register Now
+                    </button>
+                    {% endif %}
+                    {% else %}
+                    <a href="/login" class="btn btn-primary flex-fill py-2">Login to Register</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination Controls -->
+<nav aria-label="Page navigation" class="mt-5">
+    <ul class="pagination justify-content-center gap-2">
+        {% if page > 1 %}
+        <li class="page-item">
+            <a class="page-link rounded-3 border-0 glass-panel px-4 py-2"
+                href="{{ url_for('public.events', page=page-1) }}">
+                <i class="fas fa-chevron-left me-2 small"></i> Previous
+            </a>
+        </li>
+        {% endif %}
+
+        <li class="page-item d-flex align-items-center mx-3">
+            <span class="text-secondary small fw-bold">Page {{ page }} of {{ total_pages }}</span>
+        </li>
+
+        {% if page < total_pages %} <li class="page-item">
+            <a class="page-link rounded-3 border-0 glass-panel px-4 py-2"
+                href="{{ url_for('public.events', page=page+1) }}">
+                Next <i class="fas fa-chevron-right ms-2 small"></i>
+            </a>
+            </li>
+            {% endif %}
+    </ul>
+</nav>
+
+<!-- Event Registration Modal -->
+<div class="modal fade" id="eventRegisterModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content glass-ui text-white">
+            <div class="modal-header border-0">
+                <div>
+                    <h5 class="modal-title mb-0">Register for <span id="modalEventName" class="text-primary"></span>
+                    </h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+
+                <!-- Registration Form -->
+                <div id="formStep">
+                    <form id="registrationForm" method="POST" action="">
+                        <div class="mb-3">
+                            <label class="form-label">Full Name</label>
+                            <input type="text" name="name" class="form-control" value="{{ session.get('name', '') }}"
+                                required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Register Number</label>
+                            <input type="text" name="register_number" class="form-control"
+                                value="{{ session.get('register_number', '') }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" name="email" class="form-control" value="{{ session.get('email', '') }}"
+                                required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Semester</label>
+                            <select name="semester" class="form-select" required>
+                                <option value="" {% if not session.get('semester') %}selected{% endif %} disabled>Select
+                                    Semester</option>
+                                {% for i in range(1, 9) %}
+                                <option value="{{ i }}" {% if session.get('semester')|string==i|string %}selected{%
+                                    endif %}>
+                                    {{ i }}{% if i == 1 %}st{% elif i == 2 %}nd{% elif i == 3 %}rd{% else %}th{% endif
+                                    %} Semester
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary fw-bold">Confirm Registration</button>
+                        </div>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const registerModal = document.getElementById('eventRegisterModal');
+        if (!registerModal) return;
+
+        registerModal.addEventListener('show.bs.modal', ev => {
+            const btn = ev.relatedTarget;
+            const eventId = btn.getAttribute('data-event-id');
+            const eventName = btn.getAttribute('data-event-name');
+
+            document.getElementById('modalEventName').textContent = eventName;
+            document.getElementById('registrationForm').action = `/register-event/${eventId}`;
+        });
+    });
+</script>
+
+<!-- Edit Event Modal -->
+<div class="modal fade" id="editEventModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content glass-ui text-white">
+            <div class="modal-header border-0">
+                <h5 class="modal-title">Edit Event: <span id="editModalEventNameDisplay"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editEventForm" method="POST" action="">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Event Name</label>
+                            <input type="text" name="event_name" id="edit_event_name" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label" id="editDateLabelStart">Event Date (From)</label>
+                            <input type="date" name="event_date" id="edit_event_date" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Duration</label>
+                            <select name="duration" id="edit_event_duration" class="form-select" onchange="toggleEditEndDate()">
+                                <option value="1 Day">Single Day</option>
+                                <option value="Multi-Day">Multi-Day Event</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3 d-none" id="editEndDateContainer">
+                            <label class="form-label text-info">Event End Date</label>
+                            <input type="date" name="event_end_date" id="edit_event_end_date" class="form-control">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Start Time</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="fas fa-clock"></i></span>
+                                <input type="time" name="start_time" id="edit_start_time" class="form-control" 
+                                    onchange="updateEventAmPm('edit_start_time', 'edit_start_ampm')" required>
+                                <span class="input-group-text fw-bold" id="edit_start_ampm" style="min-width:54px;">--</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">End Time</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="fas fa-history"></i></span>
+                                <input type="time" name="end_time" id="edit_end_time" class="form-control" 
+                                    onchange="updateEventAmPm('edit_end_time', 'edit_end_ampm')" required>
+                                <span class="input-group-text fw-bold" id="edit_end_ampm" style="min-width:54px;">--</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Location</label>
+                            <input type="text" name="location" id="edit_location" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Coordinator</label>
+                            <select name="coordinator_id" id="edit_coordinator_id" class="form-select" required>
+                                {% if faculty_list %}
+                                {% for faculty in faculty_list %}
+                                <option value="{{ faculty.faculty_id }}">{{ faculty.name }} ({{ faculty.department }})</option>
+                                {% endfor %}
+                                {% endif %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Event Type</label>
+                            <select name="event_type" id="edit_event_type" class="form-select" required>
+                                <option value="General">General</option>
+                                <option value="Technical Seminar">Technical Seminar</option>
+                                <option value="Workshop">Workshop</option>
+                                <option value="Hackathon">Hackathon</option>
+                                <option value="Cultural">Cultural</option>
+                                <option value="Sports">Sports</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Points Awarded</label>
+                            <input type="number" name="points_awarded" id="edit_points_awarded" class="form-control" min="0" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label text-warning"><i class="fas fa-filter me-1"></i>Target Department</label>
+                            <select name="department" id="edit_department" class="form-select border-warning" required>
+                                <option value="All">All Departments (General / Open)</option>
+                                <option value="CSE">Computer Science (CSE)</option>
+                                <option value="IT">Information Technology (IT)</option>
+                                <option value="ECE">Electronics (ECE)</option>
+                                <option value="EEE">Electrical (EEE)</option>
+                                <option value="MECH">Mechanical (MECH)</option>
+                                <option value="CIVIL">Civil (CIVIL)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea name="description" id="edit_description" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Update Event Details</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const editModal = document.getElementById('editEventModal');
+        if (editModal) {
+            editModal.addEventListener('show.bs.modal', event => {
+                const button = event.relatedTarget;
+                const eventId = button.getAttribute('data-event-id');
+                const eventName = button.getAttribute('data-event-name');
+                const eventDate = button.getAttribute('data-event-date');
+                const location = button.getAttribute('data-location');
+                const description = button.getAttribute('data-description');
+                const coordinatorId = button.getAttribute('data-coordinator-id');
+                const eventType = button.getAttribute('data-event-type') || 'General';
+                const pnt = button.getAttribute('data-points') || 10;
+                const dept = button.getAttribute('data-department') || 'All';
+                const duration = button.getAttribute('data-duration') || '1 Day';
+                const endDate = button.getAttribute('data-end-date') || '';
+                const startTime = button.getAttribute('data-start-time') || '';
+                const endTime = button.getAttribute('data-end-time') || '';
+
+                document.getElementById('editModalEventNameDisplay').textContent = eventName;
+                document.getElementById('edit_event_name').value = eventName;
+                document.getElementById('edit_event_date').value = eventDate;
+                document.getElementById('edit_location').value = location;
+                document.getElementById('edit_description').value = description;
+                document.getElementById('edit_coordinator_id').value = coordinatorId;
+                document.getElementById('edit_event_type').value = eventType;
+                document.getElementById('edit_points_awarded').value = pnt;
+                document.getElementById('edit_department').value = dept;
+                document.getElementById('edit_event_duration').value = duration;
+                document.getElementById('edit_event_end_date').value = endDate;
+                document.getElementById('edit_start_time').value = startTime;
+                document.getElementById('edit_end_time').value = endTime;
+
+                // Sync AM/PM badges for edit modal
+                updateEventAmPm('edit_start_time', 'edit_start_ampm');
+                updateEventAmPm('edit_end_time', 'edit_end_ampm');
+
+                // Toggle end date field visibility based on stored duration
+                toggleEditEndDate();
+
+                const form = document.getElementById('editEventForm');
+                form.action = `/admin/edit-event/${eventId}`;
+            });
+        }
+    });
+
+    function toggleEditEndDate() {
+        const durationSelect = document.getElementById('edit_event_duration');
+        const endDateContainer = document.getElementById('editEndDateContainer');
+        const eventEndDateInput = document.getElementById('edit_event_end_date');
+        const dateLabelStart = document.getElementById('editDateLabelStart');
+
+        if (!durationSelect || !endDateContainer) return;
+
+        if (durationSelect.value === '1 Day') {
+            endDateContainer.classList.add('d-none');
+            eventEndDateInput.removeAttribute('required');
+            if (dateLabelStart) dateLabelStart.textContent = 'Event Date';
+        } else {
+            endDateContainer.classList.remove('d-none');
+            eventEndDateInput.setAttribute('required', 'required');
+            if (dateLabelStart) dateLabelStart.textContent = 'Event Date (From)';
+        }
+    }
+
+    function updateEventAmPm(inputId, badgeId) {
+        const val = document.getElementById(inputId)?.value;
+        const badge = document.getElementById(badgeId);
+        if (!badge) return;
+        if (!val) { badge.textContent = '--'; badge.className = 'input-group-text fw-bold'; return; }
+        const h = parseInt(val.split(':')[0], 10);
+        const isAM = h < 12;
+        badge.textContent = isAM ? 'AM' : 'PM';
+        badge.className = 'input-group-text fw-bold ' + (isAM ? 'text-primary' : 'text-danger');
+    }
+</script>
+
+<!-- Delete Event Confirmation Modal -->
+<div class="modal fade" id="deleteEventModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle me-2"></i>Confirm Delete</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the event <strong id="deleteEventName"></strong>?</p>
+                <p class="text-danger"><small>This will also remove all registrations and attendance records for this
+                        event. This action cannot be undone.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a id="deleteEventBtn" href="#" class="btn btn-danger load-page">
+                    <i class="fas fa-trash-alt me-1"></i> Delete Event
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const deleteModal = document.getElementById('deleteEventModal');
+        if (deleteModal) {
+            deleteModal.addEventListener('show.bs.modal', event => {
+                const button = event.relatedTarget;
+                const eventId = button.getAttribute('data-event-id');
+                const eventName = button.getAttribute('data-event-name');
+
+                document.getElementById('deleteEventName').textContent = eventName;
+                document.getElementById('deleteEventBtn').href = `/admin/delete-event/${eventId}`;
+            });
+        }
+    });
+</script>
+{% else %}
+<div class="alert alert-info text-center">
+    No events available.
+</div>
+{% endif %}
+{% endblock %}
